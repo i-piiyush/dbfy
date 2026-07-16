@@ -1,38 +1,50 @@
 // app/project/[id]/page.tsx
 "use client";
-import { ReactFlow, Background, Controls } from "@xyflow/react";
+import { ReactFlow, Background, Controls, Panel } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import TableNode from "@/components/TableNode";
-import { useState } from "react";
+import { useProjectStore } from "@/store/projectStore";
 
 const nodeTypes = { tableNode: TableNode };
 
-
 export default function ProjectPage() {
-  const [addField,setAddField] = useState(false)
-  const nodes = [
-  {
-    id: "1",
-    type: "tableNode",
-    position: { x: 200, y: 150 },
-    data: {
-      label: "Users",
-      schema: [
-        { title: "id", type: "UUID", isPK: true },
-        { title: "email", type: "String" },
-        { title: "createdAt", type: "DateTime" },
-      ],
-      setAddField,addField
-    },
-  },
-];
+  const nodes = useProjectStore((s) => s.nodes);
+  const edges = useProjectStore((s) => s.edges);
+  const onNodesChange = useProjectStore((s) => s.onNodesChange);
+  const onEdgesChange = useProjectStore((s) => s.onEdgesChange);
+  const createTable = useProjectStore((s) => s.createTable);
 
   return (
-    <div className="h-screen w-full">
-      <ReactFlow nodes={nodes} nodeTypes={nodeTypes} fitView>
-        <Background />
-        <Controls />
-      </ReactFlow>
+    <div className="h-screen w-full flex">
+      {/* Left toolbar */}
+      <div className="w-12 bg-white border-r flex flex-col items-center py-4 gap-4 z-10">
+        <button
+          onClick={createTable}
+          title="Add Table"
+          className="w-8 h-8 rounded hover:bg-gray-100 flex items-center justify-center text-gray-600 text-xl"
+        >
+          +
+        </button>
+      </div>
+
+      <div className="flex-1 h-full">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          nodeTypes={nodeTypes}
+          fitView
+        >
+          <Background />
+          <Controls />
+          <Panel position="top-right">
+            <button className="rounded bg-blue-600 px-4 py-2 text-white text-sm">
+              Save
+            </button>
+          </Panel>
+        </ReactFlow>
+      </div>
     </div>
   );
 }
