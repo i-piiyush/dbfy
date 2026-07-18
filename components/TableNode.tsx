@@ -1,15 +1,11 @@
 // components/TableNode.tsx
 import { Handle, Position } from "@xyflow/react";
 import { useState } from "react";
-import {  Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Column, DraftField } from "@/types/tableNode.type";
 import { useProjectStore } from "@/store/projectStore";
 import FieldForm from "./FieldForm";
 import { TYPE_COLORS } from "@/lib/data";
-
-
-
-
 
 const emptyDraft: DraftField = {
   name: "",
@@ -19,14 +15,14 @@ const emptyDraft: DraftField = {
   isUnique: false,
 };
 
-
-
 export default function TableNode({ id }: { id: string }) {
+  const table = useProjectStore((s) => s.tables.find((t) => t.tableId === id));
 
-  const table = useProjectStore((s)=>s.tables.find((t)=>t.tableId === id));
- 
-  const updateTableName = useProjectStore((s)=>s.updateTableName)
-  const deleteTable = useProjectStore((s)=>s.deleteTable)
+  const updateTableName = useProjectStore((s) => s.updateTableName);
+  const deleteTable = useProjectStore((s) => s.deleteTable);
+  const updateField = useProjectStore((s) => s.updateField);
+  const addField = useProjectStore((s) => s.addField);
+  const deleteField = useProjectStore((s) => s.deleteField);
 
   const [isAdding, setIsAdding] = useState(false);
   const [addDraft, setAddDraft] = useState<DraftField>(emptyDraft);
@@ -37,28 +33,30 @@ export default function TableNode({ id }: { id: string }) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(table?.name ?? "");
 
-   if (!table) return null;
+  if (!table) return null;
 
   // --- ACTIONS WIREDFUP WITH CONSOLE LOGS ---
   const handleAddSave = () => {
     if (!addDraft.name.trim()) return;
-    
+
     console.log("➕ ADD FIELD TRIGGERED:", {
       tableId: table.tableId,
-      newFieldData: addDraft
+      newFieldData: addDraft,
     });
 
-    // Simulating the store mutation locally for UI behavior
-    const newField: Column = {
-      fieldId: `f_${Date.now()}`,
-      name: addDraft.name.trim(),
+    console.log("handle edit chla editing field id, ", addDraft);
+    const fields: DraftField = {
+      name: addDraft.name,
       type: addDraft.type,
-      isPK: addDraft.isPK,
       isNullable: addDraft.isNullable,
+      isPK: addDraft.isPK,
       isUnique: addDraft.isUnique,
     };
-    
-    setTable(prev => ({ ...prev, fields: [...prev.fields, newField] }));
+
+    console.log("fields: ", fields);
+
+    addField(table.tableId, fields);
+
     setAddDraft(emptyDraft);
     setIsAdding(false);
   };
@@ -75,7 +73,10 @@ export default function TableNode({ id }: { id: string }) {
   };
 
   const handleEditSave = () => {
+    console.log("chla pr col ni pta");
     if (!editingFieldId || !editDraft.name.trim()) return;
+
+    console.log("edit save chla editing field id, ", editingFieldId);
 
     const updatedField = {
       name: editDraft.name.trim(),
@@ -85,35 +86,30 @@ export default function TableNode({ id }: { id: string }) {
       isUnique: editDraft.isUnique,
     };
 
+    updateField(table.tableId, editingFieldId, updatedField);
+
     console.log("📝 UPDATE FIELD TRIGGERED:", {
       tableId: table.tableId,
       fieldId: editingFieldId,
-      updatedData: updatedField
+      updatedData: updatedField,
     });
 
-    setTable(prev => ({
-      ...prev,
-      fields: prev.fields.map(f => f.fieldId === editingFieldId ? { ...f, ...updatedField } : f)
-    }));
     setEditingFieldId(null);
   };
 
   const handleDeleteField = (fieldId: string) => {
     console.log("🗑️ DELETE FIELD TRIGGERED:", {
       tableId: table.tableId,
-      fieldId: fieldId
+      fieldId: fieldId,
     });
 
-    setTable(prev => ({
-      ...prev,
-      fields: prev.fields.filter(f => f.fieldId !== fieldId)
-    }));
+    deleteField(table.tableId, fieldId);
   };
 
   const handleDeleteTable = () => {
-    deleteTable(table.tableId)
+    deleteTable(table.tableId);
     console.log("💥 DELETE TABLE TRIGGERED:", {
-      tableId: table.tableId
+      tableId: table.tableId,
     });
   };
 
@@ -121,14 +117,12 @@ export default function TableNode({ id }: { id: string }) {
     const trimmed = nameDraft.trim();
     if (!trimmed) return;
 
-
-updateTableName(table.tableId,trimmed)
+    updateTableName(table.tableId, trimmed);
     console.log("🏷️ RENAME TABLE TRIGGERED:", {
       tableId: table.tableId,
       oldName: table.name,
-      newName: trimmed
+      newName: trimmed,
     });
-
 
     setIsEditingName(false);
   };
@@ -287,7 +281,10 @@ updateTableName(table.tableId,trimmed)
       {!isAdding && (
         <div className="px-3 py-2 border-t border-zinc-100">
           <button
-            onClick={() => setIsAdding(true)}
+            onClick={() => {
+              setIsAdding(true);
+              // handleAddSave()
+            }}
             className="w-full flex items-center justify-center gap-1 text-[11px] text-zinc-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg py-1.5 transition-all duration-150 font-medium"
           >
             <Plus size={12} />

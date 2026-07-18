@@ -2,7 +2,13 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { applyNodeChanges, applyEdgeChanges } from "@xyflow/react";
-import type { Node, Edge, NodeChange, EdgeChange, Connection } from "@xyflow/react";
+import type {
+  Node,
+  Edge,
+  NodeChange,
+  EdgeChange,
+  Connection,
+} from "@xyflow/react";
 
 export type Field = {
   fieldId: string;
@@ -35,13 +41,17 @@ type ProjectStore = {
   updateTableName: (tableId: string, name: string) => void;
 
   // field actions
-  addField: (tableId: string) => void;
-  updateField: (tableId: string, fieldId: string, updates: Partial<Field>) => void;
+  addField: (tableId: string, fieldData?: Partial<Field>) => void;
+  updateField: (
+    tableId: string,
+    fieldId: string,
+    updates: Partial<Field>,
+  ) => void;
   deleteField: (tableId: string, fieldId: string) => void;
 };
 
 export const useProjectStore = create<ProjectStore>()(
-  immer((set, get) => ({
+  immer((set, _get) => ({
     tables: [],
     nodes: [],
     edges: [],
@@ -84,7 +94,10 @@ export const useProjectStore = create<ProjectStore>()(
         state.nodes.push({
           id: tableId,
           type: "tableNode",
-          position: { x: Math.random() * 400 + 100, y: Math.random() * 300 + 100 },
+          position: {
+            x: Math.random() * 400 + 100,
+            y: Math.random() * 300 + 100,
+          },
           data: {},
         });
       }),
@@ -95,7 +108,7 @@ export const useProjectStore = create<ProjectStore>()(
         state.nodes = state.nodes.filter((n) => n.id !== tableId);
         // also drop any edges touching this table's node
         state.edges = state.edges.filter(
-          (e) => e.source !== tableId && e.target !== tableId
+          (e) => e.source !== tableId && e.target !== tableId,
         );
       }),
 
@@ -105,17 +118,17 @@ export const useProjectStore = create<ProjectStore>()(
         if (table) table.name = name;
       }),
 
-    addField: (tableId) =>
+    addField: (tableId, fieldData) =>
       set((state) => {
         const table = state.tables.find((t) => t.tableId === tableId);
         if (!table) return;
         table.fields.push({
           fieldId: crypto.randomUUID(),
-          name: "",
-          type: null,
-          isPK: false,
-          isUnique: false,
-          isNullable: true,
+          name: fieldData?.name ?? "",
+          type: fieldData?.type ?? null,
+          isPK: fieldData?.isPK ?? false,
+          isUnique: fieldData?.isUnique ?? false,
+          isNullable: fieldData?.isNullable ?? true,
         });
       }),
 
@@ -132,5 +145,5 @@ export const useProjectStore = create<ProjectStore>()(
         if (!table) return;
         table.fields = table.fields.filter((f) => f.fieldId !== fieldId);
       }),
-  }))
+  })),
 );
