@@ -183,6 +183,7 @@ export default function TableNode({ id }: { id: string }) {
                 key={col.fieldId}
                 draft={editDraft}
                 setDraft={setEditDraft}
+                canSetPrimaryKey={!table.fields.some((field) => field.isPK && field.fieldId !== col.fieldId)}
                 onSave={handleEditSave}
                 onCancel={() => setEditingFieldId(null)}
               />
@@ -199,7 +200,7 @@ export default function TableNode({ id }: { id: string }) {
               <Handle
                 type="target"
                 position={Position.Left}
-                id={`${i}-target`}
+                id={`target:${col.fieldId}`}
                 className="!w-2 !h-2 !bg-zinc-200 group-hover:!bg-indigo-400 !border-0 !transition-colors"
               />
 
@@ -256,7 +257,7 @@ export default function TableNode({ id }: { id: string }) {
               <Handle
                 type="source"
                 position={Position.Right}
-                id={`${i}-source`}
+                id={`source:${col.fieldId}`}
                 className="!w-2 !h-2 !bg-zinc-200 group-hover:!bg-indigo-400 !border-0 !transition-colors"
               />
             </div>
@@ -269,6 +270,7 @@ export default function TableNode({ id }: { id: string }) {
         <FieldForm
           draft={addDraft}
           setDraft={setAddDraft}
+          canSetPrimaryKey={!table.fields.some((field) => field.isPK)}
           onSave={handleAddSave}
           onCancel={() => {
             setIsAdding(false);

@@ -9,11 +9,13 @@ export default function FieldForm({
   setDraft,
   onSave,
   onCancel,
+  canSetPrimaryKey = true,
 }: {
   draft: DraftField;
   setDraft: (d: DraftField) => void;
   onSave: () => void;
   onCancel: () => void;
+  canSetPrimaryKey?: boolean;
 }) {
   return (
     <div className="px-4 py-2.5 border-t border-zinc-100 bg-indigo-50/50 space-y-2">
@@ -50,9 +52,11 @@ export default function FieldForm({
               type="checkbox"
               checked={draft.isPK}
               onChange={(e) => setDraft({ ...draft, isPK: e.target.checked })}
+              disabled={!canSetPrimaryKey && !draft.isPK}
+              title={!canSetPrimaryKey && !draft.isPK ? "This table already has a primary key" : undefined}
               className="accent-indigo-500"
             />
-            PK
+            <span className={!canSetPrimaryKey && !draft.isPK ? "opacity-50" : undefined}>PK</span>
           </label>
           <label className="flex items-center gap-1 cursor-pointer">
             <input
