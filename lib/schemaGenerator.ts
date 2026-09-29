@@ -1,4 +1,4 @@
-import { useProjectStore, type Field, type Table } from "@/store/projectStore";
+import type { Field, Table } from "@/store/projectStore";
 
 const PRISMA_TYPES: Record<string, string> = {
   UUID: "String @db.Uuid",
@@ -133,7 +133,51 @@ export function generatePrismaSchema(tables: Table[]): string {
   return tables.map((table) => tableToPrisma(table, tables)).join("\n\n");
 }
 
-export function logPrismaSchema(): void {
-  const { tables } = useProjectStore.getState();
-  console.log(generatePrismaSchema(tables));
+const SQL_TYPES: Record<string, string> = {
+  UUID: "UUID",
+  String: "TEXT",
+  Int: "INTEGER",
+  Boolean: "BOOLEAN",
+  Float: "DOUBLE PRECISION",
+  DateTime: "TIMESTAMP",
+  Json: "JSONB",
+};
+
+function quoteSqlIdentifier(value: string): string {
+  return `"${value.replaceAll('"', '""')}"`;
+}
+
+function fieldToSql(field: Field): string {
+  const type = field.type ? SQL_TYPES[field.type] ?? "TEXT" : "TEXT";
+  const constraints = [
+    field.isPK ? "PRIMARY KEY" : "",
+    field.isUnique && !field.isPK ? "UNIQUE" : "",
+    !field.isNullable || field.isPK ? "NOT NULL" : "",
+  ].filter(Boolean);
+
+  return `  ${quoteSqlIdentifier(field.name)} ${type}${constraints.length ? ` ${constraints.join(" ")}` : ""}`;
+}
+
+export function generateSqlSchema(tables: Table[]): string {
+  return tables.map((table) => {
+    const primaryKeys = table.fields.filter((field) => field.isPK);
+    const columns = table.fields.map(fieldToSql);
+
+    if (primaryKeys.length > 1) {
+      columns.push(`  PRIMARY KEY (${primaryKeys.map((field) => quoteSqlIdentifier(field.name)).join(", ")})`);
+    }
+
+    for (const field of table.fields) {
+      if (!field.references) continue;
+      const referencedTable = tables.find((candidate) => candidate.tableId === field.references?.tableId);
+      const referencedField = referencedTable?.fields.find((candidate) => candidate.fieldId === field.references?.fieldId);
+      if (!referencedTable || !referencedField) continue;
+
+      columns.push(
+        `  FOREIGN KEY (${quoteSqlIdentifier(field.name)}) REFERENCES ${quoteSqlIdentifier(referencedTable.name)} (${quoteSqlIdentifier(referencedField.name)})`,
+      );
+    }
+
+    return `CREATE TABLE ${quoteSqlIdentifier(table.name)} (\n${columns.join(",\n")}\n);`;
+  }).join("\n\n");
 }

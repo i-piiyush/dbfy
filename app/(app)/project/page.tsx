@@ -1,14 +1,21 @@
 // app/project/[id]/page.tsx
 "use client";
 import { ReactFlow, Background, Controls, Panel } from "@xyflow/react";
+import { useState } from "react";
+import { Check, Clipboard, X } from "lucide-react";
 import "@xyflow/react/dist/style.css";
 import TableNode from "@/components/TableNode";
 import { useProjectStore } from "@/store/projectStore";
-import { logPrismaSchema } from "@/lib/schemaGenerator";
+import { generatePrismaSchema, generateSqlSchema } from "@/lib/schemaGenerator";
+
+type SchemaFormat = "" | "prisma" | "sql";
 
 const nodeTypes = { tableNode: TableNode };
 
 export default function ProjectPage() {
+  const [schemaOpen, setSchemaOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [schemaFormat, setSchemaFormat] = useState<SchemaFormat>("");
   const nodes = useProjectStore((s) => s.nodes);
   const edges = useProjectStore((s) => s.edges);
   const onNodesChange = useProjectStore((s) => s.onNodesChange);
@@ -16,8 +23,17 @@ export default function ProjectPage() {
   const onConnect = useProjectStore((s) => s.onConnect);
   const projectError = useProjectStore((s) => s.projectError);
   const createTable = useProjectStore((s) => s.createTable);
+  const tables = useProjectStore((s) => s.tables);
+  const schema = schemaFormat === "sql"
+    ? generateSqlSchema(tables)
+    : generatePrismaSchema(tables);
+  const schemaTitle = schemaFormat === "sql" ? "SQL schema" : "Prisma schema";
 
-  console.log("project page: ",useProjectStore((s)=>s.tables))
+  async function copySchema() {
+    await navigator.clipboard.writeText(schema);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  }
 
   return (
     <div className="h-screen w-full flex">
@@ -50,18 +66,67 @@ export default function ProjectPage() {
                 {projectError}
               </p>
             )}
-            <button
-              onClick={logPrismaSchema}
-              className="rounded bg-blue-600 px-4 py-2 text-white text-sm"
+            <label className="sr-only" htmlFor="schema-format">Load schema format</label>
+            <select
+              id="schema-format"
+              value={schemaFormat}
+              onChange={(event) => {
+                setSchemaFormat(event.target.value as SchemaFormat);
+                setCopied(false);
+                setSchemaOpen(true);
+              }}
+              className="rounded border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm"
             >
-              Log Prisma Schema
-            </button>
+              <option value="" disabled>Load schema…</option>
+              <option value="prisma">Load Prisma schema</option>
+              <option value="sql">Load SQL schema</option>
+            </select>
             <button className="ml-2 rounded bg-zinc-600 px-4 py-2 text-white text-sm">
               Save
             </button>
           </Panel>
         </ReactFlow>
       </div>
+
+      {schemaOpen && (
+        <>
+          <button
+            aria-label="Close Prisma schema sidebar"
+            className="fixed inset-0 z-20 cursor-default bg-black/20"
+            onClick={() => setSchemaOpen(false)}
+          />
+          <aside
+            aria-label={schemaTitle}
+            className="fixed inset-y-0 right-0 z-30 flex w-full max-w-xl flex-col border-l border-zinc-200 bg-white shadow-2xl"
+          >
+            <header className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
+              <div>
+                <h2 className="text-base font-semibold text-zinc-900">{schemaTitle}</h2>
+                <p className="mt-1 text-xs text-zinc-500">Generated from your current diagram</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={copySchema}
+                  className="inline-flex items-center gap-2 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+                >
+                  {copied ? <Check size={16} /> : <Clipboard size={16} />}
+                  {copied ? "Copied" : "Copy schema"}
+                </button>
+                <button
+                  onClick={() => setSchemaOpen(false)}
+                  aria-label="Close sidebar"
+                  className="rounded-md p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </header>
+            <pre className="flex-1 overflow-auto bg-zinc-50 p-5 font-mono text-sm leading-6 text-zinc-800">
+              <code>{schema || "// Add a table to generate your Prisma schema."}</code>
+            </pre>
+          </aside>
+        </>
+      )}
     </div>
   );
 }
