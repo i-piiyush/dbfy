@@ -140,9 +140,21 @@ export default function TableNode({ id }: { id: string }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-zinc-900/50 min-w-[260px] overflow-hidden shadow-sm">
+    <div
+      className="bg-white rounded-xl border border-zinc-900/50 min-w-[260px] shadow-sm"
+      onPointerDown={(event) => {
+        if ((event.target as HTMLElement).closest("button, input, select, label")) {
+          event.stopPropagation();
+        }
+      }}
+      onClick={(event) => {
+        if ((event.target as HTMLElement).closest("button, input, select, label")) {
+          event.stopPropagation();
+        }
+      }}
+    >
       {/* Header */}
-      <div className="px-4 py-3 bg-zinc-50 border-b border-zinc-900/10 flex items-center justify-between gap-2 group/header">
+      <div className="rounded-t-xl px-4 py-3 bg-zinc-50 border-b border-zinc-900/10 flex items-center justify-between gap-2 group/header">
         {isEditingName ? (
           <input
             autoFocus

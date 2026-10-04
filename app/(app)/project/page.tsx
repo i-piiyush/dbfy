@@ -1,8 +1,9 @@
 // app/project/[id]/page.tsx
 "use client";
 import { ReactFlow, Background, Controls, Panel } from "@xyflow/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Clipboard, X } from "lucide-react";
+import toast, { Toaster } from "react-hot-toast";
 import "@xyflow/react/dist/style.css";
 import TableNode from "@/components/TableNode";
 import { useProjectStore } from "@/store/projectStore";
@@ -29,6 +30,10 @@ export default function ProjectPage() {
     : generatePrismaSchema(tables);
   const schemaTitle = schemaFormat === "sql" ? "SQL schema" : "Prisma schema";
 
+  useEffect(() => {
+    if (projectError) toast.error(projectError);
+  }, [projectError]);
+
   async function copySchema() {
     await navigator.clipboard.writeText(schema);
     setCopied(true);
@@ -37,6 +42,21 @@ export default function ProjectPage() {
 
   return (
     <div className="h-screen w-full flex">
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: "#18181b",
+            color: "#fafafa",
+            borderRadius: "10px",
+            fontSize: "13px",
+          },
+          error: {
+            iconTheme: { primary: "#f87171", secondary: "#18181b" },
+          },
+        }}
+      />
       {/* Left toolbar */}
       <div className="w-12 bg-white border-r flex flex-col items-center py-4 gap-4 z-10">
         <button
@@ -62,25 +82,34 @@ export default function ProjectPage() {
           <Background />
           <Controls />
           <Panel position="top-right">
-            {projectError && (
-              <p role="alert" className="mb-2 rounded bg-red-50 px-3 py-2 text-sm text-red-700">
-                {projectError}
-              </p>
-            )}
-            <label className="sr-only" htmlFor="schema-format">Schema format</label>
-            <select
-              id="schema-format"
-              value={schemaFormat}
-              onChange={(event) => {
-                setSchemaFormat(event.target.value as SchemaFormat);
-                setCopied(false);
-                setSchemaOpen(true);
-              }}
-              className="rounded border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm"
+            <div
+              role="group"
+              aria-label="Database schema format"
+              className="inline-flex rounded-xl bg-zinc-200/80 p-1 shadow-inner"
             >
-              <option value="sql">SQL Schema</option>
-              <option value="prisma">Prisma Schema</option>
-            </select>
+              {([
+                ["sql", "SQL Schema"],
+                ["prisma", "Prisma Schema"],
+              ] as const).map(([format, label]) => (
+                <button
+                  key={format}
+                  type="button"
+                  aria-pressed={schemaFormat === format}
+                  onClick={() => {
+                    setSchemaFormat(format);
+                    setCopied(false);
+                    setSchemaOpen(true);
+                  }}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 ${
+                    schemaFormat === format
+                      ? "bg-white text-zinc-900 shadow-sm"
+                      : "text-zinc-500 hover:text-zinc-800"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <button className="ml-2 rounded bg-zinc-600 px-4 py-2 text-white text-sm">
               Save
             </button>
