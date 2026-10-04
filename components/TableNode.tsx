@@ -1,11 +1,12 @@
 // components/TableNode.tsx
 import { Handle, Position } from "@xyflow/react";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Column, DraftField } from "@/types/tableNode.type";
 import { useProjectStore } from "@/store/projectStore";
 import FieldForm from "./FieldForm";
 import { TYPE_COLORS } from "@/lib/data";
+import { SchemaFormatContext } from "./SchemaFormatContext";
 
 const emptyDraft: DraftField = {
   name: "",
@@ -13,9 +14,11 @@ const emptyDraft: DraftField = {
   isPK: false,
   isNullable: true,
   isUnique: false,
+  generatedId: undefined,
 };
 
 export default function TableNode({ id }: { id: string }) {
+  const schemaFormat = useContext(SchemaFormatContext);
   const table = useProjectStore((s) => s.tables.find((t) => t.tableId === id));
 
   const updateTableName = useProjectStore((s) => s.updateTableName);
@@ -35,6 +38,10 @@ export default function TableNode({ id }: { id: string }) {
 
   if (!table) return null;
 
+  // New tables start with an empty first field. Require that field to be
+  // named and assigned a type before allowing additional fields.
+  const canAddField = Boolean(table.fields[0]?.name.trim() && table.fields[0]?.type);
+
   // --- ACTIONS WIREDFUP WITH CONSOLE LOGS ---
   const handleAddSave = () => {
     if (!addDraft.name.trim()) return;
@@ -51,11 +58,13 @@ export default function TableNode({ id }: { id: string }) {
       isNullable: addDraft.isNullable,
       isPK: addDraft.isPK,
       isUnique: addDraft.isUnique,
+      generatedId: addDraft.generatedId,
     };
 
     console.log("fields: ", fields);
 
-    addField(table.tableId, fields);
+    const added = addField(table.tableId, fields);
+    if (!added) return;
 
     setAddDraft(emptyDraft);
     setIsAdding(false);
@@ -69,6 +78,7 @@ export default function TableNode({ id }: { id: string }) {
       isPK: !!col.isPK,
       isNullable: col.isNullable ?? true,
       isUnique: !!col.isUnique,
+      generatedId: col.generatedId,
     });
   };
 
@@ -84,9 +94,11 @@ export default function TableNode({ id }: { id: string }) {
       isPK: editDraft.isPK,
       isNullable: editDraft.isNullable,
       isUnique: editDraft.isUnique,
+      generatedId: editDraft.generatedId,
     };
 
-    updateField(table.tableId, editingFieldId, updatedField);
+    const updated = updateField(table.tableId, editingFieldId, updatedField);
+    if (!updated) return;
 
     console.log("📝 UPDATE FIELD TRIGGERED:", {
       tableId: table.tableId,
@@ -183,6 +195,7 @@ export default function TableNode({ id }: { id: string }) {
                 key={col.fieldId}
                 draft={editDraft}
                 setDraft={setEditDraft}
+                schemaFormat={schemaFormat}
                 canSetPrimaryKey={!table.fields.some((field) => field.isPK && field.fieldId !== col.fieldId)}
                 onSave={handleEditSave}
                 onCancel={() => setEditingFieldId(null)}
@@ -270,6 +283,7 @@ export default function TableNode({ id }: { id: string }) {
         <FieldForm
           draft={addDraft}
           setDraft={setAddDraft}
+          schemaFormat={schemaFormat}
           canSetPrimaryKey={!table.fields.some((field) => field.isPK)}
           onSave={handleAddSave}
           onCancel={() => {
@@ -283,11 +297,11 @@ export default function TableNode({ id }: { id: string }) {
       {!isAdding && (
         <div className="px-3 py-2 border-t border-zinc-100">
           <button
+            disabled={!canAddField}
             onClick={() => {
               setIsAdding(true);
-              // handleAddSave()
             }}
-            className="w-full flex items-center justify-center gap-1 text-[11px] text-zinc-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg py-1.5 transition-all duration-150 font-medium"
+            className="w-full flex items-center justify-center gap-1 text-[11px] text-zinc-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg py-1.5 transition-all duration-150 font-medium disabled:opacity-40 disabled:hover:text-zinc-400 disabled:hover:bg-transparent disabled:cursor-not-allowed"
           >
             <Plus size={12} />
             Add field

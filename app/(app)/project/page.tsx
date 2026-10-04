@@ -7,15 +7,15 @@ import "@xyflow/react/dist/style.css";
 import TableNode from "@/components/TableNode";
 import { useProjectStore } from "@/store/projectStore";
 import { generatePrismaSchema, generateSqlSchema } from "@/lib/schemaGenerator";
-
-type SchemaFormat = "" | "prisma" | "sql";
+import { SchemaFormatContext } from "@/components/SchemaFormatContext";
+import type { SchemaFormat } from "@/lib/data";
 
 const nodeTypes = { tableNode: TableNode };
 
 export default function ProjectPage() {
   const [schemaOpen, setSchemaOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [schemaFormat, setSchemaFormat] = useState<SchemaFormat>("");
+  const [schemaFormat, setSchemaFormat] = useState<SchemaFormat>("sql");
   const nodes = useProjectStore((s) => s.nodes);
   const edges = useProjectStore((s) => s.edges);
   const onNodesChange = useProjectStore((s) => s.onNodesChange);
@@ -49,6 +49,7 @@ export default function ProjectPage() {
       </div>
 
       <div className="flex-1 h-full">
+        <SchemaFormatContext.Provider value={schemaFormat}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -66,7 +67,7 @@ export default function ProjectPage() {
                 {projectError}
               </p>
             )}
-            <label className="sr-only" htmlFor="schema-format">Load schema format</label>
+            <label className="sr-only" htmlFor="schema-format">Schema format</label>
             <select
               id="schema-format"
               value={schemaFormat}
@@ -77,15 +78,15 @@ export default function ProjectPage() {
               }}
               className="rounded border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm"
             >
-              <option value="" disabled>Load schema…</option>
-              <option value="prisma">Load Prisma schema</option>
-              <option value="sql">Load SQL schema</option>
+              <option value="sql">SQL Schema</option>
+              <option value="prisma">Prisma Schema</option>
             </select>
             <button className="ml-2 rounded bg-zinc-600 px-4 py-2 text-white text-sm">
               Save
             </button>
           </Panel>
         </ReactFlow>
+        </SchemaFormatContext.Provider>
       </div>
 
       {schemaOpen && (

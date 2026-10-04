@@ -5,6 +5,7 @@ export type Column = {
   isPK: boolean;
   isNullable: boolean;
   isUnique: boolean;
+  generatedId?: "autoincrement" | "uuid";
 };
 
 export type Table = {
@@ -19,4 +20,5 @@ export type DraftField = {
   isPK: boolean;
   isNullable: boolean;
   isUnique: boolean;
+  generatedId?: "autoincrement" | "uuid";
 };

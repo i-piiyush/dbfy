@@ -1,4 +1,4 @@
-// store/useProjectStore.ts
+﻿// store/useProjectStore.ts
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { addEdge, applyNodeChanges, applyEdgeChanges } from "@xyflow/react";
@@ -17,6 +17,7 @@ export type Field = {
   isPK: boolean;
   isUnique: boolean;
   isNullable: boolean;
+  generatedId?: "autoincrement" | "uuid";
   references?: { tableId: string; fieldId: string };
 };
 
@@ -43,12 +44,12 @@ type ProjectStore = {
   updateTableName: (tableId: string, name: string) => void;
 
   // field actions
-  addField: (tableId: string, fieldData?: Partial<Field>) => void;
+  addField: (tableId: string, fieldData?: Partial<Field>) => boolean;
   updateField: (
     tableId: string,
     fieldId: string,
     updates: Partial<Field>,
-  ) => void;
+  ) => boolean;
   deleteField: (tableId: string, fieldId: string) => void;
 };
 
@@ -185,31 +186,51 @@ export const useProjectStore = create<ProjectStore>()(
         if (table) table.name = name;
       }),
 
-    addField: (tableId, fieldData) =>
+    addField: (tableId, fieldData) => {
+      let added = false;
       set((state) => {
         const table = state.tables.find((t) => t.tableId === tableId);
         if (!table) return;
+        const normalizedName = (fieldData?.name ?? "").trim().toLowerCase();
+        if (table.fields.some((field) => field.name.trim().toLowerCase() === normalizedName)) {
+          state.projectError = "Field names must be unique within a table, regardless of case.";
+          return;
+        }
         if (fieldData?.isPK && table.fields.some((field) => field.isPK)) {
           state.projectError = "Each table can have only one primary key field.";
           return;
         }
         table.fields.push({
           fieldId: crypto.randomUUID(),
-          name: fieldData?.name ?? "",
+          name: (fieldData?.name ?? "").trim(),
           type: fieldData?.type ?? null,
           isPK: fieldData?.isPK ?? false,
           isUnique: fieldData?.isUnique ?? false,
           isNullable: fieldData?.isNullable ?? true,
+          generatedId: fieldData?.generatedId,
         });
-      }),
+        state.projectError = null;
+        added = true;
+      });
+      return added;
+    },
 
-    updateField: (tableId, fieldId, updates) =>
+    updateField: (tableId, fieldId, updates) => {
+      let updated = false;
       set((state) => {
         const table = state.tables.find((t) => t.tableId === tableId);
         const field = table?.fields.find((f) => f.fieldId === fieldId);
         if (!field) return;
 
         const nextField = { ...field, ...updates };
+        const normalizedName = (nextField.name ?? "").trim().toLowerCase();
+        if (table.fields.some((candidate) =>
+          candidate.fieldId !== fieldId &&
+          candidate.name.trim().toLowerCase() === normalizedName
+        )) {
+          state.projectError = "Field names must be unique within a table, regardless of case.";
+          return;
+        }
         if (
           updates.isPK === true &&
           table?.fields.some((candidate) => candidate.fieldId !== fieldId && candidate.isPK)
@@ -251,7 +272,11 @@ export const useProjectStore = create<ProjectStore>()(
         }
 
         Object.assign(field, updates);
-      }),
+        state.projectError = null;
+        updated = true;
+      });
+      return updated;
+    },
 
     deleteField: (tableId, fieldId) =>
       set((state) => {
@@ -273,3 +298,5 @@ export const useProjectStore = create<ProjectStore>()(
       }),
   })),
 );
+
+

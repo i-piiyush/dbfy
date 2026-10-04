@@ -8,12 +8,26 @@ export const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   Json: { bg: "bg-pink-50", text: "text-pink-500" },
 };
 
-export const DATATYPES = [
-  "String",
-  "Int",
-  "Boolean",
-  "Float",
-  "DateTime",
-  "Json",
-  "UUID",
+export type SchemaFormat = "sql" | "prisma";
+
+export const PRISMA_DATATYPES = [
+  "String", "Int", "BigInt", "Decimal", "Float", "Boolean",
+  "DateTime", "UUID", "Json", "String[]",
+];
+
+// Values are stable internal type identifiers; labels are what the editor shows.
+export const SQL_DATATYPES = [
+  { value: "Text", label: "TEXT" },
+  { value: "VarChar", label: "VARCHAR(n)" },
+  { value: "Int", label: "INTEGER" },
+  { value: "BigInt", label: "BIGINT" },
+  { value: "Decimal", label: "DECIMAL / NUMERIC" },
+  { value: "Float", label: "DOUBLE PRECISION" },
+  { value: "Boolean", label: "BOOLEAN" },
+  { value: "Date", label: "DATE" },
+  { value: "Timestamp", label: "TIMESTAMP" },
+  { value: "Timestamptz", label: "TIMESTAMPTZ" },
+  { value: "UUID", label: "UUID" },
+  { value: "Json", label: "JSONB" },
+  { value: "String[]", label: "TEXT[]" },
 ];

@@ -1,6 +1,6 @@
 "use client"
 
-import { DATATYPES } from "@/lib/data";
+import { PRISMA_DATATYPES, SQL_DATATYPES, SchemaFormat } from "@/lib/data";
 import { DraftField } from "@/types/tableNode.type";
 import { Check, X } from "lucide-react";
 
@@ -10,13 +10,23 @@ export default function FieldForm({
   onSave,
   onCancel,
   canSetPrimaryKey = true,
+  schemaFormat,
 }: {
   draft: DraftField;
   setDraft: (d: DraftField) => void;
   onSave: () => void;
   onCancel: () => void;
   canSetPrimaryKey?: boolean;
+  schemaFormat: SchemaFormat;
 }) {
+  const datatypes = schemaFormat === "sql"
+    ? SQL_DATATYPES
+    : PRISMA_DATATYPES.map((type) => ({ value: type, label: type }));
+  const selectedType = datatypes.some(({ value }) => value === draft.type)
+    ? draft.type
+    : datatypes[0]?.value;
+  const supportsAutoIncrement = ["Int", "BigInt"].includes(selectedType);
+  const supportsUuidGeneration = selectedType === "UUID";
   return (
     <div className="px-4 py-2.5 border-t border-zinc-100 bg-indigo-50/50 space-y-2">
       <div className="flex items-center gap-2">
@@ -33,17 +43,35 @@ export default function FieldForm({
           className="flex-1 text-xs bg-white border border-zinc-200 rounded-md px-2 py-1.5 outline-none focus:border-indigo-400 text-zinc-700 placeholder-zinc-300 min-w-0"
         />
         <select
-          value={draft.type}
-          onChange={(e) => setDraft({ ...draft, type: e.target.value })}
+          value={selectedType}
+          onChange={(e) => setDraft({ ...draft, type: e.target.value, generatedId: undefined })}
           className="text-xs bg-white border border-zinc-200 rounded-md px-1.5 py-1.5 outline-none focus:border-indigo-400 text-indigo-600 cursor-pointer"
         >
-          {DATATYPES.map((t) => (
-            <option key={t} value={t}>
-              {t}
+          {datatypes.map(({ value, label }) => (
+            <option key={`${value}-${label}`} value={value}>
+              {label}
             </option>
           ))}
         </select>
       </div>
+
+      {(supportsAutoIncrement || supportsUuidGeneration) && (
+        <label className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono">
+          <span>ID generation</span>
+          <select
+            value={draft.generatedId ?? ""}
+            onChange={(e) => setDraft({
+              ...draft,
+              generatedId: e.target.value === "" ? undefined : e.target.value as "autoincrement" | "uuid",
+            })}
+            className="text-xs bg-white border border-zinc-200 rounded-md px-1.5 py-1 outline-none focus:border-indigo-400 text-indigo-600"
+          >
+            <option value="">None</option>
+            {supportsAutoIncrement && <option value="autoincrement">Auto-increment</option>}
+            {supportsUuidGeneration && <option value="uuid">Generate UUID</option>}
+          </select>
+        </label>
+      )}
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 text-[10px] text-zinc-500 font-mono">
