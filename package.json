@@ -9,11 +9,14 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.9.23",
+    "@clerk/ui": "^1.42.2",
     "@xyflow/react": "^12.11.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "immer": "^11.1.11",
     "lucide-react": "^1.21.0",
+    "mongoose": "^9.11.4",
     "next": "16.2.9",
     "radix-ui": "^1.6.0",
     "react": "19.2.4",

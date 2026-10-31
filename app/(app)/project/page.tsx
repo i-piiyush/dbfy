@@ -1,5 +1,7 @@
 // app/project/[id]/page.tsx
 "use client";
+import Link from "next/link";
+import { Show, UserButton } from "@clerk/nextjs";
 import { ReactFlow, Background, Controls, Panel } from "@xyflow/react";
 import { useEffect, useState } from "react";
 import { Check, Clipboard, X } from "lucide-react";
@@ -57,16 +59,61 @@ export default function ProjectPage() {
           },
         }}
       />
-      {/* Left toolbar */}
-      <div className="w-12 bg-white border-r flex flex-col items-center py-4 gap-4 z-10">
-        <button
-          onClick={createTable}
-          title="Add Table"
-          className="w-8 h-8 rounded hover:bg-gray-100 flex items-center justify-center text-gray-600 text-xl"
-        >
-          +
-        </button>
-      </div>
+      <aside className="z-10 flex w-64 shrink-0 flex-col border-r border-zinc-200 bg-white px-4 py-5">
+        <Link href="/project" className="flex items-center gap-3 px-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-900 text-sm font-bold text-white">D</span>
+          <span>
+            <span className="block text-sm font-semibold tracking-tight text-zinc-900">DBFY</span>
+            <span className="block text-xs text-zinc-500">Project workspace</span>
+          </span>
+        </Link>
+
+        <div className="mt-8">
+          <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">Workspace</p>
+          <button
+            onClick={createTable}
+            type="button"
+            className="mt-3 flex w-full items-center gap-3 rounded-xl bg-zinc-900 px-3 py-3 text-left text-sm font-medium text-white shadow-sm transition hover:bg-zinc-700"
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/15 text-lg leading-none">+</span>
+            Add table
+          </button>
+        </div>
+
+        <div className="mt-8 rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+          <p className="text-xs font-medium text-zinc-800">Schema designer</p>
+          <p className="mt-1 text-xs leading-5 text-zinc-500">Build tables and export SQL or Prisma schemas.</p>
+        </div>
+
+        <div className="mt-auto border-t border-zinc-200 pt-4">
+          <Show when="signed-in">
+            <div className="flex items-center gap-3 rounded-xl px-2 py-2">
+              <UserButton />
+              <span className="text-sm font-medium text-zinc-700">Profile</span>
+            </div>
+            <Link
+              href="/sign-out"
+              className="mt-2 flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+            >
+              Log out
+            </Link>
+          </Show>
+          <Show when="signed-out">
+            <Link
+              href="/sign-in"
+              className="flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/sign-up"
+              className="mt-1 flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
+            >
+              Create an account
+            </Link>
+          </Show>
+        </div>
+      </aside>
 
       <div className="flex-1 h-full">
         <SchemaFormatContext.Provider value={schemaFormat}>
