@@ -1,9 +1,11 @@
-import React from 'react'
+import type { Metadata } from "next";
+import LandingExperience from "@/components/LandingExperience";
 
-const page = () => {
-  return (
-    <div>page</div>
-  )
+export const metadata: Metadata = {
+  title: "DBFY — Make your database schema make sense",
+  description: "Design database schemas visually, connect fields, and copy generated SQL or Prisma code.",
+};
+
+export default function HomePage() {
+  return <LandingExperience />;
 }
-
-export default page

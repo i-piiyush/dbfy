@@ -1,7 +1,7 @@
 "use client";
 
-import AppleSelect from "@/components/ui/AppleSelect";
-import type { SelectOption } from "@/components/ui/AppleSelect";
+import SearchableSelect from "@/components/ui/SearchableSelect";
+import type { SelectOption } from "@/components/ui/SearchableSelect";
 
 export default function FieldTypeSelect({
   value,
@@ -15,7 +15,7 @@ export default function FieldTypeSelect({
   return (
     <label className="w-[116px] shrink-0 space-y-1.5">
       <span className="block text-[11px] font-medium text-zinc-600">Type</span>
-      <AppleSelect
+      <SearchableSelect
         ariaLabel="Field data type"
         triggerClassName="w-full"
         value={value}

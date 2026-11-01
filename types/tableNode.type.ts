@@ -6,6 +6,7 @@ export type Column = {
   isNullable: boolean;
   isUnique: boolean;
   generatedId?: "autoincrement" | "uuid";
+  references?: { tableId: string; fieldId: string };
 };
 
 export type Table = {

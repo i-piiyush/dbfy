@@ -2,13 +2,38 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@clerk/ui/themes/shadcn.css";
+@import "lenis/dist/lenis.css";
 @layer base {
   @import "@xyflow/react/dist/style.css";
 }
 
 @custom-variant dark (&:is(.dark *));
 
+:root {
+    --palette-canvas: #f7f4ed;
+    --palette-ink: #171717;
+    --palette-paper: #ffffff;
+    --palette-acid: #c9ff55;
+    --palette-violet: #b9a8ff;
+    --palette-pink: #ff8fc7;
+    --palette-coral: #ffb9a9;
+    --palette-sky: #91e6ff;
+    --palette-lemon: #fff1b8;
+    --palette-purple: #7156ff;
+    --palette-grid: #d9d4c8;
+}
+
 @theme inline {
+    --color-canvas: var(--palette-canvas);
+    --color-ink: var(--palette-ink);
+    --color-paper: var(--palette-paper);
+    --color-acid: var(--palette-acid);
+    --color-violet: var(--palette-violet);
+    --color-pink: var(--palette-pink);
+    --color-coral: var(--palette-coral);
+    --color-sky: var(--palette-sky);
+    --color-lemon: var(--palette-lemon);
+    --color-brand: var(--palette-purple);
     --font-heading: var(--font-sans);
     --font-sans: var(--font-sans);
     --color-sidebar-ring: var(--sidebar-ring);
@@ -52,38 +77,38 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
+    --background: var(--palette-canvas);
+    --foreground: var(--palette-ink);
+    --card: var(--palette-paper);
+    --card-foreground: var(--palette-ink);
+    --popover: var(--palette-paper);
+    --popover-foreground: var(--palette-ink);
+    --primary: var(--palette-ink);
+    --primary-foreground: var(--palette-paper);
+    --secondary: var(--palette-lemon);
+    --secondary-foreground: var(--palette-ink);
+    --muted: var(--palette-canvas);
+    --muted-foreground: #68645d;
+    --accent: var(--palette-violet);
+    --accent-foreground: var(--palette-ink);
+    --destructive: var(--palette-coral);
+    --border: var(--palette-ink);
+    --input: var(--palette-ink);
+    --ring: var(--palette-purple);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
     --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --sidebar: var(--palette-canvas);
+    --sidebar-foreground: var(--palette-ink);
+    --sidebar-primary: var(--palette-acid);
+    --sidebar-primary-foreground: var(--palette-ink);
+    --sidebar-accent: var(--palette-violet);
+    --sidebar-accent-foreground: var(--palette-ink);
+    --sidebar-border: var(--palette-ink);
+    --sidebar-ring: var(--palette-purple);
 }
 
 .dark {
@@ -130,4 +155,29 @@
   html {
     @apply font-sans;
     }
+}
+
+@layer components {
+  .react-flow__controls {
+    overflow: hidden;
+    border: 2px solid var(--palette-ink);
+    border-radius: 0;
+    background: var(--palette-paper);
+    box-shadow: 3px 3px 0 var(--palette-ink);
+  }
+
+  .react-flow__controls-button {
+    border-bottom: 1px solid var(--palette-ink);
+    background: var(--palette-paper);
+    fill: var(--palette-ink);
+    transition: background-color 140ms ease;
+  }
+
+  .react-flow__controls-button:hover {
+    background: var(--palette-acid);
+  }
+
+  .react-flow__controls-button:last-child {
+    border-bottom: 0;
+  }
 }

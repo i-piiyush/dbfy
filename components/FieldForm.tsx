@@ -38,7 +38,7 @@ export default function FieldForm({
 
   return (
     <div
-      className="space-y-3 border-t border-zinc-200 bg-white px-3 py-3 text-zinc-900"
+      className="space-y-3 border-t-[3px] border-ink bg-canvas px-3 py-3 text-ink"
       style={{ fontFamily: "var(--font-geist-sans)" }}
     >
       <div className="flex items-end gap-2">

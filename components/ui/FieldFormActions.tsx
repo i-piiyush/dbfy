@@ -12,11 +12,11 @@ export default function FieldFormActions({
   onCancel: () => void;
 }) {
   return (
-    <div className="flex justify-end gap-2 border-t border-zinc-100 pt-2.5">
+    <div className="flex justify-end gap-2 border-t-2 border-ink pt-2.5">
       <button
         type="button"
         onClick={onCancel}
-        className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+        className="inline-flex h-8 items-center gap-1.5 border-2 border-ink bg-paper px-2.5 text-xs font-black text-ink hover:bg-pink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
       >
         <X size={13} />
         Cancel
@@ -25,7 +25,7 @@ export default function FieldFormActions({
         type="button"
         onClick={onSave}
         disabled={!canSave}
-        className="inline-flex h-8 items-center gap-1.5 rounded-md bg-zinc-900 px-3 text-xs font-medium text-white shadow-sm transition-colors hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+        className="inline-flex h-8 items-center gap-1.5 border-2 border-ink bg-acid px-3 text-xs font-black text-ink shadow-[3px_3px_0_var(--palette-ink)] hover:shadow-[2px_2px_0_var(--palette-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-500 disabled:shadow-none"
       >
         <Check size={13} />
         Save field

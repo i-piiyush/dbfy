@@ -32,6 +32,8 @@ type ProjectStore = {
   nodes: Node[];
   edges: Edge[];
   projectError: string | null;
+  projectErrorId: number;
+  newTableToFocus: string | null;
 
   // node/edge sync with react flow
   onNodesChange: (changes: NodeChange[]) => void;
@@ -41,6 +43,7 @@ type ProjectStore = {
   // table actions
   createTable: () => void;
   deleteTable: (tableId: string) => void;
+  consumeNewTableFocus: (tableId: string) => void;
   updateTableName: (tableId: string, name: string) => void;
 
   // field actions
@@ -59,6 +62,8 @@ export const useProjectStore = create<ProjectStore>()(
     nodes: [],
     edges: [],
     projectError: null,
+    projectErrorId: 0,
+    newTableToFocus: null,
 
     // react-flow's own helpers already return new arrays,
     // so plain assignment here is fine even inside immer.
@@ -84,6 +89,7 @@ export const useProjectStore = create<ProjectStore>()(
       set((state) => {
         const fail = (message: string) => {
           state.projectError = message;
+          state.projectErrorId += 1;
         };
         if (!connection.source || !connection.target || !connection.sourceHandle || !connection.targetHandle) {
           fail("Connect a field handle on each table.");
@@ -163,10 +169,12 @@ export const useProjectStore = create<ProjectStore>()(
           },
           data: {},
         });
+        state.newTableToFocus = tableId;
       }),
 
     deleteTable: (tableId) =>
       set((state) => {
+        if (state.newTableToFocus === tableId) state.newTableToFocus = null;
         state.tables = state.tables.filter((t) => t.tableId !== tableId);
         for (const table of state.tables) {
           for (const field of table.fields) {
@@ -178,6 +186,11 @@ export const useProjectStore = create<ProjectStore>()(
         state.edges = state.edges.filter(
           (e) => e.source !== tableId && e.target !== tableId,
         );
+      }),
+
+    consumeNewTableFocus: (tableId) =>
+      set((state) => {
+        if (state.newTableToFocus === tableId) state.newTableToFocus = null;
       }),
 
     updateTableName: (tableId, name) =>
@@ -194,10 +207,12 @@ export const useProjectStore = create<ProjectStore>()(
         const normalizedName = (fieldData?.name ?? "").trim().toLowerCase();
         if (table.fields.some((field) => field.name.trim().toLowerCase() === normalizedName)) {
           state.projectError = "Field names must be unique within a table, regardless of case.";
+          state.projectErrorId += 1;
           return;
         }
         if (fieldData?.isPK && table.fields.some((field) => field.isPK)) {
           state.projectError = "Each table can have only one primary key field.";
+          state.projectErrorId += 1;
           return;
         }
         table.fields.push({
@@ -220,7 +235,7 @@ export const useProjectStore = create<ProjectStore>()(
       set((state) => {
         const table = state.tables.find((t) => t.tableId === tableId);
         const field = table?.fields.find((f) => f.fieldId === fieldId);
-        if (!field) return;
+        if (!table || !field) return;
 
         const nextField = { ...field, ...updates };
         const normalizedName = (nextField.name ?? "").trim().toLowerCase();
@@ -229,6 +244,7 @@ export const useProjectStore = create<ProjectStore>()(
           candidate.name.trim().toLowerCase() === normalizedName
         )) {
           state.projectError = "Field names must be unique within a table, regardless of case.";
+          state.projectErrorId += 1;
           return;
         }
         if (
@@ -236,6 +252,7 @@ export const useProjectStore = create<ProjectStore>()(
           table?.fields.some((candidate) => candidate.fieldId !== fieldId && candidate.isPK)
         ) {
           state.projectError = "Each table can have only one primary key field.";
+          state.projectErrorId += 1;
           return;
         }
         const isReferenced = state.tables.some((candidate) =>
@@ -247,6 +264,7 @@ export const useProjectStore = create<ProjectStore>()(
         );
         if (isReferenced && !nextField.isPK && !nextField.isUnique) {
           state.projectError = "A referenced field must remain a primary key or unique.";
+          state.projectErrorId += 1;
           return;
         }
         const referencingField = state.tables
@@ -258,6 +276,7 @@ export const useProjectStore = create<ProjectStore>()(
           );
         if (referencingField && nextField.type !== referencingField.type) {
           state.projectError = "A referenced field and its foreign key must keep the same data type.";
+          state.projectErrorId += 1;
           return;
         }
         if (
@@ -268,6 +287,7 @@ export const useProjectStore = create<ProjectStore>()(
               ?.fields.find((candidateField) => candidateField.fieldId === field.references?.fieldId)?.type
         ) {
           state.projectError = "A foreign key and its referenced field must keep the same data type.";
+          state.projectErrorId += 1;
           return;
         }
 

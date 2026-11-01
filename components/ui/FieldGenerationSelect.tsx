@@ -1,7 +1,7 @@
 "use client";
 
-import AppleSelect from "@/components/ui/AppleSelect";
-import type { SelectOption } from "@/components/ui/AppleSelect";
+import SearchableSelect from "@/components/ui/SearchableSelect";
+import type { SelectOption } from "@/components/ui/SearchableSelect";
 
 export type GeneratedId = "autoincrement" | "uuid" | undefined;
 
@@ -32,7 +32,7 @@ export default function FieldGenerationSelect({
         <p className="text-xs font-medium text-zinc-800">Generated value</p>
         <p className="mt-0.5 text-[10px] text-zinc-500">Set a default for this field</p>
       </div>
-      <AppleSelect
+      <SearchableSelect
         ariaLabel="Generated value"
         value={value ?? ""}
         options={options}
