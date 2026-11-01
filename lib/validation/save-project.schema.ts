@@ -102,4 +102,4 @@ export const saveTableSchema = z.object({
   }
 });
 
-export type SaveTableInput = z.infer<typeof saveTableSchema>;
+export type SaveProjectInput = z.infer<typeof saveTableSchema>;

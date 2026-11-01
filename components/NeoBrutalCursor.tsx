@@ -1,23 +1,28 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
+const subscribeToCursorTarget = () => () => {};
+const getCursorTarget = () => {
+  const supportsCustomCursor = window.matchMedia("(hover: hover) and (pointer: fine)").matches
+    && navigator.maxTouchPoints === 0;
+  return supportsCustomCursor ? document.body : null;
+};
+const getServerCursorTarget = () => null;
+
 export default function NeoBrutalCursor() {
-  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  const portalTarget = useSyncExternalStore(subscribeToCursorTarget, getCursorTarget, getServerCursorTarget);
   const cursorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const supportsCustomCursor = window.matchMedia("(hover: hover) and (pointer: fine)").matches
-      && navigator.maxTouchPoints === 0;
-    if (!supportsCustomCursor) return;
+    if (!portalTarget) return;
 
     const landingRoute = document.querySelector(".landing-route");
     landingRoute?.classList.add("has-neo-cursor");
-    setPortalTarget(document.body);
 
     return () => landingRoute?.classList.remove("has-neo-cursor");
-  }, []);
+  }, [portalTarget]);
 
   useEffect(() => {
     const cursor = cursorRef.current;

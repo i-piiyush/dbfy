@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { codeToHtml } from "shiki";
-import type { SchemaFormat } from "@/lib/data";
+import type { SchemaFormat } from "@/lib/schema-options";
 
 const neoLightTheme = {
   name: "dbfy-neo-light",

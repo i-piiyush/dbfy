@@ -1,4 +1,4 @@
-export type response<TData = unknown> =
+export type ApiResponse<TData = unknown> =
   | {
       success: true;
       message: string;

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ClerkFailed, ClerkLoading } from "@clerk/nextjs";
 import LandingExperience from "@/components/LandingExperience";
 
@@ -29,7 +30,7 @@ export default function HomePage() {
         <main className="fixed inset-0 z-[100] grid min-h-screen place-items-center bg-canvas px-4 text-center text-ink">
           <div className="border-[3px] border-ink bg-paper p-7 shadow-[6px_6px_0_var(--palette-ink)]">
             <p className="font-mono text-xs font-black uppercase tracking-widest">DBFY couldn’t finish loading</p>
-            <a href="/" className="mt-5 inline-flex border-2 border-ink bg-acid px-4 py-2 text-xs font-black uppercase shadow-[3px_3px_0_var(--palette-ink)]">Try again</a>
+            <Link href="/" className="mt-5 inline-flex border-2 border-ink bg-acid px-4 py-2 text-xs font-black uppercase shadow-[3px_3px_0_var(--palette-ink)]">Try again</Link>
           </div>
         </main>
       </ClerkFailed>

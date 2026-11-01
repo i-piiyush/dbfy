@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Show, UserButton } from "@clerk/nextjs";
+import { neobrutalism } from "@clerk/ui/themes";
 import { motion } from "motion/react";
 import { Database, FolderKanban, LogIn, Plus } from "lucide-react";
 
@@ -83,7 +84,7 @@ export default function WorkspaceSidebar({ projectName, onNewProject, onAddTable
         </div>
         <Show when="signed-in">
           <div className="flex items-center justify-center gap-3 border-2 border-ink bg-paper p-2.5 shadow-[3px_3px_0_var(--palette-ink)] md:justify-start md:p-3">
-            <UserButton />
+            <UserButton appearance={{ theme: neobrutalism }} userProfileProps={{ appearance: { theme: neobrutalism } }} />
             <span className="hidden text-xs font-extrabold md:inline">Your account</span>
           </div>
           <Link href="/sign-out" className="mt-3 hidden px-1 text-xs font-bold underline decoration-2 underline-offset-4 hover:text-brand md:block">Log out</Link>

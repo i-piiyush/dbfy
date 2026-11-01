@@ -1,5 +1,5 @@
 
-import { IUser } from "@/types/userModel.type";
+import { IUser } from "@/types/user";
 import mongoose, { Schema, Model } from "mongoose";
 
 

@@ -1,18 +1,12 @@
 import { auth } from "@clerk/nextjs/server";
 import { z } from "zod";
-import connectDB from "@/lib/database/mongoDB";
-import Field from "@/models/field";
-import type { response } from "@/types/response.type";
-
+import connectDB from "@/lib/database/mongo-db";
+import Project from "@/models/project";
+import { jsonResponse } from "@/lib/api-response";
 const renameProjectSchema = z.object({
   projectId: z.string().regex(/^[a-f\d]{24}$/i, "Project ID must be valid."),
   projectName: z.string().trim().min(1, "Project name cannot be empty.").max(100, "Project names must be 100 characters or fewer."),
 }).strict();
-
-function jsonResponse<TData>(body: response<TData>, status: number) {
-  return Response.json(body, { status });
-}
-
 export async function PATCH(request: Request) {
   try {
     const { userId, isAuthenticated, sessionId } = await auth();
@@ -37,13 +31,13 @@ export async function PATCH(request: Request) {
     }
 
     await connectDB();
-    const project = await Field.findOne({ _id: validation.data.projectId, userID: userId });
+    const project = await Project.findOne({ _id: validation.data.projectId, userID: userId });
     if (!project) {
       return jsonResponse<never>({ success: false, message: "Project not found." }, 404);
     }
 
     const normalizedName = validation.data.projectName.toLocaleLowerCase();
-    const projects = await Field.find({ userID: userId }).select("_id projectName").lean();
+    const projects = await Project.find({ userID: userId }).select("_id projectName").lean();
     const duplicate = projects.some((candidate) =>
       candidate._id.toString() !== project._id.toString() &&
       candidate.projectName.trim().toLocaleLowerCase() === normalizedName,

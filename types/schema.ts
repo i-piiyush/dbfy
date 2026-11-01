@@ -1,4 +1,5 @@
-export type Column = {
+/** Field data shared by the canvas, schema generators, and stored projects. */
+export type SchemaField = {
   fieldId: string;
   name: string;
   type: string | null;
@@ -9,17 +10,12 @@ export type Column = {
   references?: { tableId: string; fieldId: string };
 };
 
-export type Table = {
+export type SchemaTable = {
   tableId: string;
   name: string;
-  fields: Column[];
+  fields: SchemaField[];
 };
 
-export type DraftField = {
-  name: string;
+export type DraftField = Omit<SchemaField, "fieldId" | "references"> & {
   type: string;
-  isPK: boolean;
-  isNullable: boolean;
-  isUnique: boolean;
-  generatedId?: "autoincrement" | "uuid";
 };

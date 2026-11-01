@@ -1,12 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
-import connectDB from "@/lib/database/mongoDB";
-import Field from "@/models/field";
-import type { response } from "@/types/response.type";
-
-function jsonResponse<TData>(body: response<TData>, status: number) {
-  return Response.json(body, { status });
-}
-
+import connectDB from "@/lib/database/mongo-db";
+import Project from "@/models/project";
+import { jsonResponse } from "@/lib/api-response";
 export async function POST(request: Request) {
   try {
     const { userId, isAuthenticated, sessionId } = await auth();
@@ -46,7 +41,7 @@ export async function POST(request: Request) {
     }
 
     await connectDB();
-    const project = await Field.create({
+    const project = await Project.create({
       projectName,
       tableData: [],
       userID: userId,

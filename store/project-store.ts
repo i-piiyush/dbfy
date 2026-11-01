@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { addEdge, applyNodeChanges, applyEdgeChanges } from "@xyflow/react";
+import type { SchemaField, SchemaTable } from "@/types/schema";
 import type {
   Node,
   Edge,
@@ -10,25 +11,8 @@ import type {
   Connection,
 } from "@xyflow/react";
 
-export type Field = {
-  fieldId: string;
-  name: string;
-  type: string | null;
-  isPK: boolean;
-  isUnique: boolean;
-  isNullable: boolean;
-  generatedId?: "autoincrement" | "uuid";
-  references?: { tableId: string; fieldId: string };
-};
-
-export type Table = {
-  tableId: string;
-  name: string;
-  fields: Field[];
-};
-
 type ProjectStore = {
-  tables: Table[];
+  tables: SchemaTable[];
   nodes: Node[];
   edges: Edge[];
   projectError: string | null;
@@ -47,17 +31,17 @@ type ProjectStore = {
   updateTableName: (tableId: string, name: string) => void;
 
   // field actions
-  addField: (tableId: string, fieldData?: Partial<Field>) => boolean;
+  addField: (tableId: string, fieldData?: Partial<SchemaField>) => boolean;
   updateField: (
     tableId: string,
     fieldId: string,
-    updates: Partial<Field>,
+    updates: Partial<SchemaField>,
   ) => boolean;
   deleteField: (tableId: string, fieldId: string) => void;
 };
 
 export const useProjectStore = create<ProjectStore>()(
-  immer((set, _get) => ({
+  immer((set) => ({
     tables: [],
     nodes: [],
     edges: [],
@@ -145,7 +129,7 @@ export const useProjectStore = create<ProjectStore>()(
       set((state) => {
         const tableId = crypto.randomUUID();
 
-        const defaultField: Field = {
+        const defaultField: SchemaField = {
           fieldId: crypto.randomUUID(),
           name: "",
           type: null,

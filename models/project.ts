@@ -1,5 +1,5 @@
 
-import { IField } from "@/types/fieldModel.type";
+import type { IProject } from "@/types/project";
 import mongoose, { Schema, Model } from "mongoose";
 
 const ReferencesSchema = new Schema(
@@ -33,7 +33,7 @@ const TableDataSchema = new Schema(
   { _id: false },
 );
 
-const FieldSchema = new Schema<IField>(
+const ProjectSchema = new Schema<IProject>(
   {
     projectName: {
       type: String,
@@ -53,10 +53,11 @@ const FieldSchema = new Schema<IField>(
   }
 );
 
-FieldSchema.index({ userID: 1, projectName: 1 }, { unique: true });
+ProjectSchema.index({ userID: 1, projectName: 1 }, { unique: true });
 
-const Field: Model<IField> =
+// Keep the registered model name so Mongoose continues using the existing `fields` collection.
+const Project: Model<IProject> =
   mongoose.models.Field ||
-  mongoose.model<IField>("Field", FieldSchema);
+  mongoose.model<IProject>("Field", ProjectSchema);
 
-export default Field;
+export default Project;

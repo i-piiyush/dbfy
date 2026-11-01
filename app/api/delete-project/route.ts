@@ -1,17 +1,11 @@
 import { auth } from "@clerk/nextjs/server";
 import { z } from "zod";
-import connectDB from "@/lib/database/mongoDB";
-import Field from "@/models/field";
-import type { response } from "@/types/response.type";
-
+import connectDB from "@/lib/database/mongo-db";
+import Project from "@/models/project";
+import { jsonResponse } from "@/lib/api-response";
 const deleteProjectSchema = z.object({
   projectId: z.string().regex(/^[a-f\d]{24}$/i, "Project ID must be valid."),
 }).strict();
-
-function jsonResponse<TData>(body: response<TData>, status: number) {
-  return Response.json(body, { status });
-}
-
 export async function DELETE(request: Request) {
   try {
     const { userId, isAuthenticated, sessionId } = await auth();
@@ -36,7 +30,7 @@ export async function DELETE(request: Request) {
     }
 
     await connectDB();
-    const deletedProject = await Field.findOneAndDelete({
+    const deletedProject = await Project.findOneAndDelete({
       _id: validation.data.projectId,
       userID: userId,
     }).select("_id projectName").lean();

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Check, CircleAlert, Info, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import NeoDialog from "@/components/ui/NeoDialog";
@@ -35,6 +35,13 @@ export default function FeedbackProvider({ children }: { children: React.ReactNo
   const confirmResolver = useRef<((confirmed: boolean) => void) | null>(null);
   const nextId = useRef(0);
   const timers = useRef(new Map<number, number>());
+
+  // Clear pending notifications and resolve any open confirmation when leaving the app.
+  useEffect(() => () => {
+    timers.current.forEach((timer) => window.clearTimeout(timer));
+    timers.current.clear();
+    confirmResolver.current?.(false);
+  }, []);
 
   const dismissToast = useCallback((id: number, instantly = false) => {
     const timer = timers.current.get(id);

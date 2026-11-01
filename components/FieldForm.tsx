@@ -3,9 +3,9 @@
 import {
   PRISMA_DATATYPES,
   SQL_DATATYPES,
-} from "@/lib/data";
-import type { SchemaFormat } from "@/lib/data";
-import type { DraftField } from "@/types/tableNode.type";
+} from "@/lib/schema-options";
+import type { SchemaFormat } from "@/lib/schema-options";
+import type { DraftField } from "@/types/schema";
 import FieldConstraints from "@/components/ui/FieldConstraints";
 import FieldFormActions from "@/components/ui/FieldFormActions";
 import FieldGenerationSelect from "@/components/ui/FieldGenerationSelect";

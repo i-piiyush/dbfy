@@ -1,13 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import mongoose from "mongoose";
-import connectDB from "@/lib/database/mongoDB";
-import Field from "@/models/field";
-import type { response } from "@/types/response.type";
-
-function jsonResponse<TData>(body: response<TData>, status: number) {
-  return Response.json(body, { status });
-}
-
+import connectDB from "@/lib/database/mongo-db";
+import Project from "@/models/project";
+import { jsonResponse } from "@/lib/api-response";
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -35,7 +30,7 @@ export async function GET(
 
     // Include the owner in the query so IDs cannot be used to access another
     // user's saved project.
-    const project = await Field.findOne({ _id: id, userID: userId })
+    const project = await Project.findOne({ _id: id, userID: userId })
       .select("projectName tableData createdAt updatedAt")
       .lean();
 

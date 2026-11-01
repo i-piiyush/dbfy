@@ -3,8 +3,8 @@
 import { Handle, Position } from "@xyflow/react";
 import { KeyRound, Link2, Pencil, Plus, Table2, Trash2 } from "lucide-react";
 import { useContext, useState } from "react";
-import type { Column, DraftField } from "@/types/tableNode.type";
-import { useProjectStore } from "@/store/projectStore";
+import type { DraftField, SchemaField } from "@/types/schema";
+import { useProjectStore } from "@/store/project-store";
 import FieldForm from "./FieldForm";
 import { SchemaFormatContext } from "./SchemaFormatContext";
 import { useConfirmDialog } from "@/components/ui/FeedbackProvider";
@@ -59,7 +59,7 @@ export default function TableNode({ id }: { id: string }) {
     setIsAdding(false);
   }
 
-  function startEdit(field: Column) {
+  function startEdit(field: SchemaField) {
     setEditingFieldId(field.fieldId);
     setEditDraft({
       name: field.name,
@@ -175,7 +175,7 @@ export default function TableNode({ id }: { id: string }) {
         )}
 
         <>
-          {currentTable.fields.map((field: Column) => {
+          {currentTable.fields.map((field: SchemaField) => {
             const isEditing = editingFieldId === field.fieldId;
             if (isEditing) {
               return (

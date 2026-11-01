@@ -1,17 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
-import connectDB from "@/lib/database/mongoDB";
-import Field from "@/models/field";
-import type { response } from "@/types/response.type";
-import dns from "node:dns";
+import connectDB from "@/lib/database/mongo-db";
+import Project from "@/models/project";
+import { jsonResponse } from "@/lib/api-response";
+import type { ProjectSummary } from "@/types/project";
 
-dns.setServers([
-  "1.1.1.1",
-  "1.0.0.1"
-])
 
-function jsonResponse<TData>(body: response<TData>, status: number) {
-  return Response.json(body, { status });
-}
 
 export async function GET() {
   try {
@@ -26,11 +19,19 @@ export async function GET() {
 
     await connectDB();
 
-    const projects = await Field.find({ userID: userId })
-      .select("projectName tableData createdAt updatedAt")
-      .sort({ updatedAt: -1 })
-      .lean();
-
+    const projects = await Project.aggregate<ProjectSummary>([
+      { $match: { userID: userId } },
+      { $sort: { updatedAt: -1 } },
+      {
+        $project: {
+          _id: 1,
+          projectName: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          tableCount: { $size: { $ifNull: ["$tableData", []] } },
+        },
+      },
+    ]);
     return jsonResponse(
       {
         success: true,
