@@ -12,12 +12,16 @@ import { useProjectStore } from "@/store/projectStore";
 import { generatePrismaSchema, generateSqlSchema } from "@/lib/schemaGenerator";
 import { SchemaFormatContext } from "@/components/SchemaFormatContext";
 import type { SchemaFormat } from "@/lib/data";
+import type { response } from "@/types/response.type";
 
 const nodeTypes = { tableNode: TableNode };
 
 export default function ProjectPage() {
   const [schemaOpen, setSchemaOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [projectNameDraft, setProjectNameDraft] = useState("");
   const [schemaFormat, setSchemaFormat] = useState<SchemaFormat>("sql");
   const nodes = useProjectStore((s) => s.nodes);
   const edges = useProjectStore((s) => s.edges);
@@ -40,6 +44,39 @@ export default function ProjectPage() {
     await navigator.clipboard.writeText(schema);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
+  }
+
+  async function saveTables(projectName: string) {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const result = await fetch("/api/save-table", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectName, tableData: tables }),
+      });
+      const payload = await result.json() as response<{ projectName: string; tableCount: number }>;
+
+      if (!result.ok || !payload.success) {
+        const details = payload.success ? [] : payload.errors ?? [];
+        const visibleDetails = details.slice(0, 5);
+        const remainingCount = details.length - visibleDetails.length;
+        const errorMessage = [
+          payload.message,
+          ...visibleDetails,
+          ...(remainingCount > 0 ? [`And ${remainingCount} more validation issue(s).`] : []),
+        ].join(" • ");
+        toast.error(errorMessage, { duration: 8000 });
+        return;
+      }
+
+      toast.success(payload.message);
+      setSaveDialogOpen(false);
+    } catch {
+      toast.error("Could not save the project because the server returned an invalid response or could not be reached.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -157,13 +194,66 @@ export default function ProjectPage() {
                 </button>
               ))}
             </div>
-            <button className="ml-2 rounded bg-zinc-600 px-4 py-2 text-white text-sm">
-              Save
+            <button
+              type="button"
+              onClick={() => {
+                setProjectNameDraft("");
+                setSaveDialogOpen(true);
+              }}
+              disabled={saving}
+              className="ml-2 rounded bg-zinc-600 px-4 py-2 text-white text-sm disabled:cursor-wait disabled:opacity-60"
+            >
+              {saving ? "Saving…" : "Save"}
             </button>
           </Panel>
         </ReactFlow>
         </SchemaFormatContext.Provider>
       </div>
+
+      {saveDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void saveTables(projectNameDraft);
+            }}
+            className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+          >
+            <h2 className="text-lg font-semibold text-zinc-900">Name this project</h2>
+            <p className="mt-1 text-sm text-zinc-500">Your tables will be saved under this name.</p>
+            <label htmlFor="project-name" className="mt-5 block text-sm font-medium text-zinc-700">
+              Project name
+            </label>
+            <input
+              id="project-name"
+              autoFocus
+              required
+              maxLength={100}
+              value={projectNameDraft}
+              onChange={(event) => setProjectNameDraft(event.target.value)}
+              placeholder="e.g. Inventory system"
+              className="mt-2 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+            />
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => setSaveDialogOpen(false)}
+                className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:cursor-wait disabled:opacity-60"
+              >
+                {saving ? "Saving…" : "Save project"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {schemaOpen && (
         <>
