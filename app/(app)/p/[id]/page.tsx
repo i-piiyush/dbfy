@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { Show, UserButton } from "@clerk/nextjs";
 import { ReactFlow, Background, Controls, Panel } from "@xyflow/react";
-import { useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
+import axios from "axios";
 import { Check, Clipboard, X } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import "@xyflow/react/dist/style.css";
@@ -13,15 +14,27 @@ import { generatePrismaSchema, generateSqlSchema } from "@/lib/schemaGenerator";
 import { SchemaFormatContext } from "@/components/SchemaFormatContext";
 import type { SchemaFormat } from "@/lib/data";
 import type { response } from "@/types/response.type";
+import type { ITableData } from "@/types/fieldModel.type";
+import type { Edge, Node } from "@xyflow/react";
 
 const nodeTypes = { tableNode: TableNode };
 
-export default function ProjectPage() {
+type SavedProject = {
+  _id: string;
+  projectName: string;
+  tableData: ITableData[];
+  updatedAt: string;
+};
+
+export default function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const [schemaOpen, setSchemaOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [projectNameDraft, setProjectNameDraft] = useState("");
+  const [projectName, setProjectName] = useState("");
+  const [projectLoading, setProjectLoading] = useState(true);
+  const [projectLoadError, setProjectLoadError] = useState("");
+  const savedTablesSnapshot = useRef<string | null>(null);
   const [schemaFormat, setSchemaFormat] = useState<SchemaFormat>("sql");
   const nodes = useProjectStore((s) => s.nodes);
   const edges = useProjectStore((s) => s.edges);
@@ -31,10 +44,69 @@ export default function ProjectPage() {
   const projectError = useProjectStore((s) => s.projectError);
   const createTable = useProjectStore((s) => s.createTable);
   const tables = useProjectStore((s) => s.tables);
+  const hasUnsavedChanges = savedTablesSnapshot.current !== null
+    && JSON.stringify(tables) !== savedTablesSnapshot.current;
   const schema = schemaFormat === "sql"
     ? generateSqlSchema(tables)
     : generatePrismaSchema(tables);
   const schemaTitle = schemaFormat === "sql" ? "SQL schema" : "Prisma schema";
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadProject() {
+      setProjectLoading(true);
+      setProjectLoadError("");
+      try {
+        const result = await axios.get<response<SavedProject>>(`/api/fetch-table/${encodeURIComponent(id)}`, {
+          validateStatus: () => true,
+        });
+        if (!active) return;
+        if (result.status < 200 || result.status >= 300 || !result.data.success || !result.data.data) {
+          setProjectLoadError(result.data.success ? "The saved project data was missing." : result.data.message);
+          return;
+        }
+
+        const savedProject = result.data.data;
+        const loadedTables = savedProject.tableData;
+        savedTablesSnapshot.current = JSON.stringify(loadedTables);
+        const loadedNodes: Node[] = loadedTables.map((table, index) => ({
+          id: table.tableId,
+          type: "tableNode",
+          position: { x: (index % 3) * 360 + 80, y: Math.floor(index / 3) * 320 + 80 },
+          data: {},
+        }));
+        const loadedEdges: Edge[] = loadedTables.flatMap((table) =>
+          table.fields.flatMap((field) => field.references
+            ? [{
+                id: `${field.references.tableId}:${field.references.fieldId}->${table.tableId}:${field.fieldId}`,
+                source: field.references.tableId,
+                sourceHandle: `source:${field.references.fieldId}`,
+                target: table.tableId,
+                targetHandle: `target:${field.fieldId}`,
+              }]
+            : []),
+        );
+
+        useProjectStore.setState({
+          tables: loadedTables,
+          nodes: loadedNodes,
+          edges: loadedEdges,
+          projectError: null,
+        });
+        setProjectName(savedProject.projectName);
+      } catch {
+        if (active) setProjectLoadError("Couldn’t connect to this project. Check your connection and try again.");
+      } finally {
+        if (active) setProjectLoading(false);
+      }
+    }
+
+    void loadProject();
+    return () => {
+      active = false;
+    };
+  }, [id]);
 
   useEffect(() => {
     if (projectError) toast.error(projectError);
@@ -46,18 +118,24 @@ export default function ProjectPage() {
     window.setTimeout(() => setCopied(false), 1800);
   }
 
-  async function saveTables(projectName: string) {
-    if (saving) return;
+  async function saveTables() {
+    if (saving || !hasUnsavedChanges) return;
+    if (tables.length === 0 && !window.confirm("This canvas is empty. Do you want to save an empty canvas to this project?")) {
+      return;
+    }
+
+    const submittedTables = structuredClone(tables);
+    const submittedSnapshot = JSON.stringify(submittedTables);
     setSaving(true);
     try {
-      const result = await fetch("/api/save-table", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectName, tableData: tables }),
-      });
-      const payload = await result.json() as response<{ projectName: string; tableCount: number }>;
+      const result = await axios.post<response<{ projectName: string; tableCount: number }>>(
+        "/api/save-project",
+        { projectId: id, tableData: submittedTables },
+        { validateStatus: () => true },
+      );
+      const payload = result.data;
 
-      if (!result.ok || !payload.success) {
+      if (result.status < 200 || result.status >= 300 || !payload.success) {
         const details = payload.success ? [] : payload.errors ?? [];
         const visibleDetails = details.slice(0, 5);
         const remainingCount = details.length - visibleDetails.length;
@@ -71,12 +149,34 @@ export default function ProjectPage() {
       }
 
       toast.success(payload.message);
-      setSaveDialogOpen(false);
+      savedTablesSnapshot.current = submittedSnapshot;
     } catch {
       toast.error("Could not save the project because the server returned an invalid response or could not be reached.");
     } finally {
       setSaving(false);
     }
+  }
+
+  if (projectLoading || projectLoadError) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#f7f4ed] p-6 text-[#171717]">
+        <section className="w-full max-w-lg border-[3px] border-black bg-white p-6 shadow-[7px_7px_0_#171717] sm:p-8">
+          {projectLoading ? (
+            <>
+              <div className="size-8 animate-spin rounded-full border-4 border-neutral-200 border-t-[#7156ff]" />
+              <h1 className="mt-5 text-xl font-black">Loading your project...</h1>
+              <p className="mt-1 text-sm font-medium text-neutral-600">Getting your tables and fields ready.</p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-xl font-black">Couldn’t load this project.</h1>
+              <p className="mt-2 text-sm font-medium text-neutral-600">{projectLoadError}</p>
+              <Link href="/playground" className="mt-5 inline-flex items-center border-2 border-black bg-[#c9ff55] px-4 py-2 text-sm font-black shadow-[3px_3px_0_#171717]">Back to projects</Link>
+            </>
+          )}
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -97,11 +197,11 @@ export default function ProjectPage() {
         }}
       />
       <aside className="z-10 flex w-64 shrink-0 flex-col border-r border-zinc-200 bg-white px-4 py-5">
-        <Link href="/project" className="flex items-center gap-3 px-2">
+        <Link href="/playground" className="flex items-center gap-3 px-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-900 text-sm font-bold text-white">D</span>
           <span>
-            <span className="block text-sm font-semibold tracking-tight text-zinc-900">DBFY</span>
-            <span className="block text-xs text-zinc-500">Project workspace</span>
+          <span className="block text-sm font-semibold tracking-tight text-zinc-900">DBFY</span>
+            <span className="block text-xs text-zinc-500">{projectName || "Project workspace"}</span>
           </span>
         </Link>
 
@@ -196,12 +296,9 @@ export default function ProjectPage() {
             </div>
             <button
               type="button"
-              onClick={() => {
-                setProjectNameDraft("");
-                setSaveDialogOpen(true);
-              }}
-              disabled={saving}
-              className="ml-2 rounded bg-zinc-600 px-4 py-2 text-white text-sm disabled:cursor-wait disabled:opacity-60"
+              onClick={() => void saveTables()}
+              disabled={saving || !hasUnsavedChanges}
+              className="ml-2 rounded bg-zinc-600 px-4 py-2 text-white text-sm disabled:cursor-not-allowed disabled:opacity-45"
             >
               {saving ? "Saving…" : "Save"}
             </button>
@@ -209,51 +306,6 @@ export default function ProjectPage() {
         </ReactFlow>
         </SchemaFormatContext.Provider>
       </div>
-
-      {saveDialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void saveTables(projectNameDraft);
-            }}
-            className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
-          >
-            <h2 className="text-lg font-semibold text-zinc-900">Name this project</h2>
-            <p className="mt-1 text-sm text-zinc-500">Your tables will be saved under this name.</p>
-            <label htmlFor="project-name" className="mt-5 block text-sm font-medium text-zinc-700">
-              Project name
-            </label>
-            <input
-              id="project-name"
-              autoFocus
-              required
-              maxLength={100}
-              value={projectNameDraft}
-              onChange={(event) => setProjectNameDraft(event.target.value)}
-              placeholder="e.g. Inventory system"
-              className="mt-2 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-            />
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => setSaveDialogOpen(false)}
-                className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:cursor-wait disabled:opacity-60"
-              >
-                {saving ? "Saving…" : "Save project"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
 
       {schemaOpen && (
         <>

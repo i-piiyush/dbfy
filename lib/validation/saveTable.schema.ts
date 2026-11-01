@@ -39,7 +39,7 @@ const tableSchema = z.object({
 }).strict();
 
 export const saveTableSchema = z.object({
-  projectName: z.string().trim().min(1, "Project name cannot be empty.").max(100, "Project name cannot exceed 100 characters."),
+  projectId: z.string().regex(/^[a-f\d]{24}$/i, "Project ID must be a valid database ID."),
   tableData: z.array(tableSchema).max(100, "A project cannot contain more than 100 tables."),
 }).strict().superRefine(({ tableData }, context) => {
   const tableIds = new Set<string>();

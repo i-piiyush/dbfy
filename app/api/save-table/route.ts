@@ -17,10 +17,21 @@ function jsonResponse<TData>(body: response<TData>, status: number) {
   return Response.json(body, { status });
 }
 
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => canonicalJson(item)).join(",")}]`;
+  }
+  if (typeof value === "object" && value !== null) {
+    const entries = Object.entries(value).sort(([left], [right]) => left.localeCompare(right));
+    return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${canonicalJson(item)}`).join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
+}
+
 export async function POST(request: Request) {
   try {
-    const { userId, isAuthenticated } = await auth();
-    if (!isAuthenticated || !userId) {
+    const { userId, isAuthenticated, sessionId } = await auth();
+    if (!isAuthenticated || !userId || !sessionId) {
       return jsonResponse<never>({ success: false, message: "You must be signed in to save a project." }, 401);
     }
 
@@ -54,35 +65,34 @@ export async function POST(request: Request) {
     }
 
     await connectDB();
-    await Field.init();
-    const indexes = await Field.collection.indexes();
-    const legacyUserIndex = indexes.find((index) =>
-      index.unique === true &&
-      index.key.userID === 1 &&
-      !("projectName" in index.key),
-    );
-    if (legacyUserIndex?.name) {
-      try {
-        await Field.collection.dropIndex(legacyUserIndex.name);
-      } catch (error) {
-        // Another simultaneous save may have already removed this legacy index.
-        if (!(typeof error === "object" && error !== null && "code" in error && error.code === 27)) {
-          throw error;
-        }
-      }
+    const projectFilter = { _id: validation.data.projectId, userID: userId };
+    const existingProject = await Field.findOne(projectFilter).select("projectName tableData").lean();
+
+    if (!existingProject) {
+      return jsonResponse<never>({
+        success: false,
+        message: "Project not found.",
+      }, 404);
+    }
+
+    if (canonicalJson(existingProject.tableData) === canonicalJson(validation.data.tableData)) {
+      return jsonResponse<never>(
+        { success: false, message: "There are no changes to save." },
+        409,
+      );
     }
 
     const savedProject = await Field.findOneAndUpdate(
-      { userID: userId, projectName: validation.data.projectName },
-      { $set: { tableData: validation.data.tableData, projectName: validation.data.projectName } },
-      { upsert: true, returnDocument: "after", runValidators: true, setDefaultsOnInsert: true },
+      projectFilter,
+      { $set: { tableData: validation.data.tableData } },
+      { returnDocument: "after", runValidators: true },
     ).select("projectName tableData").lean();
 
     if (!savedProject) {
-      return jsonResponse<never>({
-        success: false,
-        message: "The project could not be saved. Please try again.",
-      }, 500);
+      return jsonResponse<never>(
+        { success: false, message: "Project not found." },
+        404,
+      );
     }
 
     return jsonResponse({
@@ -95,12 +105,6 @@ export async function POST(request: Request) {
     }, 200);
   } catch (error) {
     console.error("Failed to save project tables:", error);
-    if (typeof error === "object" && error !== null && "code" in error && error.code === 11000) {
-      return jsonResponse<never>({
-        success: false,
-        message: "A project with that name was saved at the same time. Please try saving again.",
-      }, 409);
-    }
     return jsonResponse<never>({
       success: false,
       message: "A server error occurred while saving the project. Please try again.",
