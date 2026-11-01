@@ -1,12 +1,28 @@
-import { SignUp } from "@clerk/nextjs";
+import { ClerkFailed, ClerkLoaded, ClerkLoading, SignUp } from "@clerk/nextjs";
+import { neobrutalism } from "@clerk/ui/themes";
 import { Suspense } from "react";
+import AuthPageShell, { AuthPageLoadError, AuthPageLoader } from "@/components/AuthPageShell";
+import AuthPageReadyGate from "@/components/AuthPageReadyGate";
 
 export default function SignUpPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 py-12">
-      <Suspense fallback={<div className="h-[420px] w-full max-w-md animate-pulse rounded-2xl bg-white shadow-sm" />}>
-        <SignUp path="/sign-up" routing="path" signInUrl="/sign-in" />
-      </Suspense>
-    </main>
+    <>
+      <ClerkLoading><AuthPageLoader mode="sign-up" /></ClerkLoading>
+      <ClerkLoaded>
+        <AuthPageReadyGate mode="sign-up">
+          <AuthPageShell mode="sign-up">
+            <Suspense fallback={<AuthPageLoader mode="sign-up" />}>
+              <SignUp
+                path="/sign-up"
+                routing="path"
+                signInUrl="/sign-in"
+                appearance={{ theme: neobrutalism, variables: { colorInput: "#ffffff", colorInputForeground: "#171717" } }}
+              />
+            </Suspense>
+          </AuthPageShell>
+        </AuthPageReadyGate>
+      </ClerkLoaded>
+      <ClerkFailed><AuthPageLoadError mode="sign-up" /></ClerkFailed>
+    </>
   );
 }

@@ -158,6 +158,33 @@
 }
 
 @layer components {
+  .landing-route.has-neo-cursor,
+  .landing-route.has-neo-cursor * {
+    cursor: none !important;
+  }
+
+  .neo-brutal-cursor {
+    transform: translate3d(-100px, -100px, 0);
+    transform-origin: top left;
+  }
+
+  @keyframes neo-loader-sweep {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(350%); }
+  }
+
+  .neo-loader-progress {
+    width: 40%;
+    animation: neo-loader-sweep 1.15s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .neo-loader-progress {
+      width: 100%;
+      animation: none;
+    }
+  }
+
   .react-flow__controls {
     overflow: hidden;
     border: 2px solid var(--palette-ink);

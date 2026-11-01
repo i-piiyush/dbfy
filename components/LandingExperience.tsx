@@ -23,6 +23,7 @@ import {
 import { MotionConfig, motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 import StickerIcon from "@/components/StickerIcon";
+import NeoBrutalCursor from "@/components/NeoBrutalCursor";
 
 const lenisOptions = {
   autoRaf: true,
@@ -198,7 +199,8 @@ export default function LandingExperience() {
   return (
     <ReactLenis root options={lenisOptions}>
       <MotionConfig reducedMotion="user">
-        <main id="top" className="relative overflow-x-clip bg-canvas text-ink selection:bg-acid selection:text-ink">
+        <main id="top" className="landing-experience relative overflow-x-clip bg-canvas text-ink selection:bg-acid selection:text-ink">
+          <NeoBrutalCursor />
           {!reduceMotion && <motion.div aria-hidden="true" className="fixed left-0 right-0 top-0 z-[70] h-1 origin-left bg-brand" style={{ scaleX: scrollYProgress }} />}
 
           <header className="sticky top-0 z-50 border-b-[3px] border-ink bg-canvas/95 backdrop-blur-md">
@@ -212,9 +214,19 @@ export default function LandingExperience() {
                 <a href="#features" className="decoration-2 underline-offset-4 hover:underline">The good stuff</a>
                 <a href="#end" className="decoration-2 underline-offset-4 hover:underline">Get started</a>
               </div>
-              <StartLink className="inline-flex items-center gap-2 border-[2px] border-ink bg-pink px-3 py-2 text-[11px] font-black shadow-[3px_3px_0_var(--palette-ink)] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0_var(--palette-ink)] sm:px-4 sm:text-xs">
-                <span className="hidden sm:inline">Open the playground</span><span className="sm:hidden">Let’s build</span><ArrowUpRight size={15} strokeWidth={3} />
-              </StartLink>
+              <div className="flex items-center gap-3">
+                <Show when="signed-out">
+                  <Link href="/sign-in" className="hidden px-2 py-2 text-[11px] font-black uppercase tracking-wide underline decoration-2 underline-offset-4 hover:text-brand sm:inline-flex">Sign in</Link>
+                  <Link href="/sign-up" className="inline-flex items-center gap-2 border-[2px] border-ink bg-pink px-3 py-2 text-[11px] font-black shadow-[3px_3px_0_var(--palette-ink)] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0_var(--palette-ink)] sm:px-4 sm:text-xs">
+                    Sign up <ArrowUpRight size={15} strokeWidth={3} />
+                  </Link>
+                </Show>
+                <Show when="signed-in">
+                  <StartLink className="inline-flex items-center gap-2 border-[2px] border-ink bg-pink px-3 py-2 text-[11px] font-black shadow-[3px_3px_0_var(--palette-ink)] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0_var(--palette-ink)] sm:px-4 sm:text-xs">
+                    <span className="hidden sm:inline">Open the playground</span><span className="sm:hidden">Let’s build</span><ArrowUpRight size={15} strokeWidth={3} />
+                  </StartLink>
+                </Show>
+              </div>
             </nav>
           </header>
 
