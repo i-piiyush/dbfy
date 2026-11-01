@@ -1,0 +1,76 @@
+import { auth } from "@clerk/nextjs/server";
+import { z } from "zod";
+import connectDB from "@/lib/database/mongoDB";
+import Field from "@/models/field";
+import type { response } from "@/types/response.type";
+
+const renameProjectSchema = z.object({
+  projectId: z.string().regex(/^[a-f\d]{24}$/i, "Project ID must be valid."),
+  projectName: z.string().trim().min(1, "Project name cannot be empty.").max(100, "Project names must be 100 characters or fewer."),
+}).strict();
+
+function jsonResponse<TData>(body: response<TData>, status: number) {
+  return Response.json(body, { status });
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const { userId, isAuthenticated, sessionId } = await auth();
+    if (!isAuthenticated || !userId || !sessionId) {
+      return jsonResponse<never>({ success: false, message: "Sign in to rename a project." }, 401);
+    }
+
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return jsonResponse<never>({ success: false, message: "The request body must contain valid JSON." }, 400);
+    }
+
+    const validation = renameProjectSchema.safeParse(body);
+    if (!validation.success) {
+      return jsonResponse<never>({
+        success: false,
+        message: "Project rename validation failed.",
+        errors: validation.error.issues.map((issue) => issue.message),
+      }, 400);
+    }
+
+    await connectDB();
+    const project = await Field.findOne({ _id: validation.data.projectId, userID: userId });
+    if (!project) {
+      return jsonResponse<never>({ success: false, message: "Project not found." }, 404);
+    }
+
+    const normalizedName = validation.data.projectName.toLocaleLowerCase();
+    const projects = await Field.find({ userID: userId }).select("_id projectName").lean();
+    const duplicate = projects.some((candidate) =>
+      candidate._id.toString() !== project._id.toString() &&
+      candidate.projectName.trim().toLocaleLowerCase() === normalizedName,
+    );
+    if (duplicate) {
+      return jsonResponse<never>({ success: false, message: "You already have a project with that name." }, 409);
+    }
+
+    if (project.projectName !== validation.data.projectName) {
+      project.projectName = validation.data.projectName;
+      await project.save();
+    }
+
+    return jsonResponse({
+      success: true,
+      message: "Project renamed successfully.",
+      data: {
+        id: project._id.toString(),
+        projectName: project.projectName,
+        updatedAt: project.updatedAt,
+      },
+    }, 200);
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === 11000) {
+      return jsonResponse<never>({ success: false, message: "You already have a project with that name." }, 409);
+    }
+    console.error("Failed to rename project:", error);
+    return jsonResponse<never>({ success: false, message: "A server error occurred while renaming the project." }, 500);
+  }
+}

@@ -83,10 +83,7 @@ export default function TableNode({ id }: { id: string }) {
   };
 
   const handleEditSave = () => {
-    console.log("chla pr col ni pta");
     if (!editingFieldId || !editDraft.name.trim()) return;
-
-    console.log("edit save chla editing field id, ", editingFieldId);
 
     const updatedField = {
       name: editDraft.name.trim(),
@@ -99,46 +96,25 @@ export default function TableNode({ id }: { id: string }) {
 
     const updated = updateField(table.tableId, editingFieldId, updatedField);
     if (!updated) return;
-
-    console.log("📝 UPDATE FIELD TRIGGERED:", {
-      tableId: table.tableId,
-      fieldId: editingFieldId,
-      updatedData: updatedField,
-    });
-
     setEditingFieldId(null);
   };
 
   const handleDeleteField = (fieldId: string) => {
-    console.log("🗑️ DELETE FIELD TRIGGERED:", {
-      tableId: table.tableId,
-      fieldId: fieldId,
-    });
-
     deleteField(table.tableId, fieldId);
   };
 
   const handleDeleteTable = () => {
     deleteTable(table.tableId);
-    console.log("💥 DELETE TABLE TRIGGERED:", {
-      tableId: table.tableId,
-    });
   };
-
   const commitNameChange = () => {
     const trimmed = nameDraft.trim();
-    if (!trimmed) return;
-
+    if (!trimmed) {
+      setNameDraft(table.name);
+      return;
+    }
     updateTableName(table.tableId, trimmed);
-    console.log("🏷️ RENAME TABLE TRIGGERED:", {
-      tableId: table.tableId,
-      oldName: table.name,
-      newName: trimmed,
-    });
-
     setIsEditingName(false);
   };
-
   return (
     <div
       className="bg-white rounded-xl border border-zinc-900/50 min-w-[260px] shadow-sm"
@@ -170,6 +146,7 @@ export default function TableNode({ id }: { id: string }) {
             }}
             onBlur={() => {
               if (nameDraft.trim()) commitNameChange();
+              else setNameDraft(table.name);
             }}
             placeholder="table_name"
             className="flex-1 text-sm font-semibold bg-white border border-indigo-300 rounded-md px-2 py-1 outline-none text-zinc-800 placeholder-zinc-300 min-w-0"
@@ -186,7 +163,6 @@ export default function TableNode({ id }: { id: string }) {
             {table.name}
           </button>
         )}
-
         <button
           onClick={handleDeleteTable}
           className="opacity-0 group-hover/header:opacity-100 p-1 rounded hover:bg-red-50 text-zinc-400 hover:text-red-500 transition-opacity shrink-0"

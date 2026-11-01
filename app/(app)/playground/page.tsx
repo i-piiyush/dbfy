@@ -11,10 +11,12 @@ import {
   Command,
   Database,
   FolderKanban,
+  Pencil,
   Plus,
   Search,
   Sparkles,
   TriangleAlert,
+  Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { response } from "@/types/response.type";
@@ -49,6 +51,13 @@ export default function PlaygroundPage() {
   const [newProjectName, setNewProjectName] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
+  const [projectToRename, setProjectToRename] = useState<Project | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [renaming, setRenaming] = useState(false);
+  const [renameError, setRenameError] = useState("");
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   async function createProject(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -77,6 +86,61 @@ export default function PlaygroundPage() {
     setNewProjectName("");
     setCreateError("");
     setCreateOpen(true);
+  }
+
+  function openRenameDialog(project: Project) {
+    setProjectToRename(project);
+    setRenameDraft(project.projectName);
+    setRenameError("");
+  }
+
+  async function renameProject(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!projectToRename || renaming) return;
+    setRenaming(true);
+    setRenameError("");
+    try {
+      const result = await axios.patch<response<{ id: string; projectName: string; updatedAt: string }>>(
+        "/api/rename-project",
+        { projectId: projectToRename._id, projectName: renameDraft },
+        { validateStatus: () => true },
+      );
+      if (result.status < 200 || result.status >= 300 || !result.data.success || !result.data.data) {
+        setRenameError(result.data.success ? "The project could not be renamed." : result.data.message);
+        return;
+      }
+      const renamedProject = result.data.data;
+      setProjects((current) => current.map((project) => project._id === renamedProject.id
+        ? { ...project, projectName: renamedProject.projectName, updatedAt: renamedProject.updatedAt }
+        : project));
+      setProjectToRename(null);
+    } catch {
+      setRenameError("Couldn’t rename this project. Check your connection and try again.");
+    } finally {
+      setRenaming(false);
+    }
+  }
+
+  async function deleteProject() {
+    if (!projectToDelete || deleting) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      const result = await axios.delete<response<{ id: string }>>("/api/delete-project", {
+        data: { projectId: projectToDelete._id },
+        validateStatus: () => true,
+      });
+      if (result.status < 200 || result.status >= 300 || !result.data.success) {
+        setDeleteError(result.data.success ? "The project could not be deleted." : result.data.message);
+        return;
+      }
+      setProjects((current) => current.filter((project) => project._id !== projectToDelete._id));
+      setProjectToDelete(null);
+    } catch {
+      setDeleteError("Couldn’t delete this project. Check your connection and try again.");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   const loadProjects = useCallback(async () => {
@@ -231,23 +295,28 @@ export default function PlaygroundPage() {
                 {filteredProjects.map((project, index) => {
                   const palette = ["bg-[#b9a8ff]", "bg-[#ffb9a9]", "bg-[#c9ff55]", "bg-[#91e6ff]"];
                   return (
-                    <Link key={project._id} href={`/p/${project._id}`} aria-label={`Open ${project.projectName}`} className="flex min-h-[226px] flex-col border-[3px] border-black bg-white text-left shadow-[5px_5px_0_#171717] transition duration-150 hover:-translate-y-1 hover:shadow-[8px_8px_0_#171717] focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#7156ff]">
-                      <div className={`flex items-center justify-between border-b-[3px] border-black px-4 py-3 ${palette[index % palette.length]}`}>
-                        <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em]"><span className="size-2 rounded-full border border-black bg-white" /> Project #{String(index + 1).padStart(2, "0")}</span>
-                        <span aria-hidden="true" className="size-3 rotate-45 border-2 border-black bg-white" />
-                      </div>
-                      <div className="flex flex-1 flex-col p-4 sm:p-5">
-                        <h3 className="line-clamp-2 break-words text-xl font-black leading-tight tracking-[-0.05em]">{project.projectName}</h3>
-                        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-bold text-neutral-500">
-                          <span className="inline-flex items-center gap-1.5"><Database size={14} strokeWidth={2.5} className="text-black" />{project.tableData.length} {project.tableData.length === 1 ? "table" : "tables"}</span>
-                          <span className="inline-flex items-center gap-1.5"><CalendarDays size={14} strokeWidth={2.5} className="text-black" />Updated {formatUpdatedAt(project.updatedAt)}</span>
+                    <article key={project._id} className="flex min-h-[260px] flex-col border-[3px] border-black bg-white shadow-[5px_5px_0_#171717] transition duration-150 hover:-translate-y-1 hover:shadow-[8px_8px_0_#171717]">
+                      <Link href={`/p/${project._id}`} aria-label={`Open ${project.projectName}`} className="flex flex-1 flex-col focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#7156ff]">
+                        <div className={`flex items-center justify-between border-b-[3px] border-black px-4 py-3 ${palette[index % palette.length]}`}>
+                          <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em]"><span className="size-2 rounded-full border border-black bg-white" /> Project #{String(index + 1).padStart(2, "0")}</span>
+                          <span aria-hidden="true" className="size-3 rotate-45 border-2 border-black bg-white" />
                         </div>
-                        <div className="mt-auto flex items-center justify-between border-t-2 border-dashed border-neutral-300 pt-4">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Schema project</span>
-                          <span className="text-[10px] font-black uppercase tracking-wider text-[#7156ff]">Saved and synced ✓</span>
+                        <div className="flex flex-1 flex-col p-4 sm:p-5">
+                          <h3 className="line-clamp-2 break-words text-xl font-black leading-tight tracking-[-0.05em]">{project.projectName}</h3>
+                          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-bold text-neutral-500">
+                            <span className="inline-flex items-center gap-1.5"><Database size={14} strokeWidth={2.5} className="text-black" />{project.tableData.length} {project.tableData.length === 1 ? "table" : "tables"}</span>
+                            <span className="inline-flex items-center gap-1.5"><CalendarDays size={14} strokeWidth={2.5} className="text-black" />Updated {formatUpdatedAt(project.updatedAt)}</span>
+                          </div>
+                        </div>
+                      </Link>
+                      <div className="flex items-center justify-between border-t-[2px] border-black px-4 py-3">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Schema project</span>
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => openRenameDialog(project)} className="inline-flex items-center gap-1.5 border-2 border-black bg-[#b9a8ff] px-2.5 py-1.5 text-[10px] font-black shadow-[2px_2px_0_#171717] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"><Pencil size={12} /> Rename</button>
+                          <button type="button" onClick={() => { setProjectToDelete(project); setDeleteError(""); }} className="inline-flex items-center gap-1.5 border-2 border-black bg-[#ffb9a9] px-2.5 py-1.5 text-[10px] font-black shadow-[2px_2px_0_#171717] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"><Trash2 size={12} /> Delete</button>
                         </div>
                       </div>
-                    </Link>
+                    </article>
                   );
                 })}
               </div>
@@ -281,6 +350,43 @@ export default function PlaygroundPage() {
               <button type="submit" disabled={creating || !newProjectName.trim()} className="inline-flex items-center gap-2 border-2 border-black bg-[#ff8fc7] px-4 py-2.5 text-xs font-black shadow-[3px_3px_0_#171717] disabled:cursor-wait disabled:opacity-50">{creating ? "Creating…" : "Create project"}<ChevronRight size={15} strokeWidth={3} /></button>
             </div>
           </form>
+        </div>
+      )}
+
+      {projectToRename && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !renaming) setProjectToRename(null);
+        }}>
+          <form onSubmit={renameProject} className="w-full max-w-md border-[3px] border-black bg-[#f7f4ed] p-5 shadow-[8px_8px_0_#171717] sm:p-7">
+            <div className="mb-5">
+              <span className="inline-flex items-center gap-1.5 border-2 border-black bg-[#b9a8ff] px-2 py-1 text-[9px] font-black uppercase tracking-widest"><Pencil size={11} /> Rename project</span>
+              <h2 className="mt-3 text-2xl font-black tracking-[-0.05em]">Give it a new name.</h2>
+            </div>
+            <label htmlFor="rename-project-name" className="text-xs font-black uppercase tracking-wider">Project name</label>
+            <input id="rename-project-name" autoFocus required maxLength={100} value={renameDraft} onChange={(event) => setRenameDraft(event.target.value)} className="mt-2 w-full border-2 border-black bg-white px-3 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#7156ff]" />
+            {renameError && <p role="alert" className="mt-3 border-2 border-black bg-[#ffb9a9] px-3 py-2 text-xs font-bold">{renameError}</p>}
+            <div className="mt-5 flex justify-end gap-3">
+              <button type="button" disabled={renaming} onClick={() => setProjectToRename(null)} className="border-2 border-black bg-white px-4 py-2.5 text-xs font-black disabled:opacity-50">Cancel</button>
+              <button type="submit" disabled={renaming || !renameDraft.trim()} className="inline-flex items-center gap-2 border-2 border-black bg-[#b9a8ff] px-4 py-2.5 text-xs font-black shadow-[3px_3px_0_#171717] disabled:cursor-wait disabled:opacity-50">{renaming ? "Renaming..." : "Save name"}<ChevronRight size={15} strokeWidth={3} /></button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {projectToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !deleting) setProjectToDelete(null);
+        }}>
+          <section role="alertdialog" aria-modal="true" aria-labelledby="delete-project-title" className="w-full max-w-md border-[3px] border-black bg-[#f7f4ed] p-5 text-[#171717] shadow-[8px_8px_0_#171717] sm:p-7">
+            <div className="flex size-11 items-center justify-center border-[3px] border-black bg-[#ffb9a9] shadow-[3px_3px_0_#171717]"><TriangleAlert size={21} strokeWidth={2.8} /></div>
+            <h2 id="delete-project-title" className="mt-5 text-2xl font-black tracking-[-0.05em]">Delete “{projectToDelete.projectName}”?</h2>
+            <p className="mt-2 text-sm font-medium leading-6 text-neutral-600">This permanently removes the project and its saved tables. There is no undo.</p>
+            {deleteError && <p role="alert" className="mt-3 border-2 border-black bg-[#ffb9a9] px-3 py-2 text-xs font-bold">{deleteError}</p>}
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" disabled={deleting} onClick={() => setProjectToDelete(null)} className="border-2 border-black bg-white px-4 py-2.5 text-xs font-black shadow-[2px_2px_0_#171717] disabled:opacity-50">Keep project</button>
+              <button type="button" disabled={deleting} onClick={() => void deleteProject()} className="inline-flex items-center gap-2 border-2 border-black bg-[#ff8fc7] px-4 py-2.5 text-xs font-black shadow-[3px_3px_0_#171717] disabled:cursor-wait disabled:opacity-50"><Trash2 size={14} />{deleting ? "Deleting..." : "Yes, delete"}</button>
+            </div>
+          </section>
         </div>
       )}
     </main>
