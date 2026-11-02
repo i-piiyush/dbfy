@@ -1,11 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
-import { z } from "zod";
 import connectDB from "@/lib/database/mongo-db";
 import Project from "@/models/project";
 import { jsonResponse } from "@/lib/api-response";
-const deleteProjectSchema = z.object({
-  projectId: z.string().regex(/^[a-f\d]{24}$/i, "Project ID must be valid."),
-}).strict();
+import { deleteProjectSchema } from "@/lib/validation/project.schema";
+
 export async function DELETE(request: Request) {
   try {
     const { userId, isAuthenticated, sessionId } = await auth();

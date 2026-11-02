@@ -1,12 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
-import { z } from "zod";
 import connectDB from "@/lib/database/mongo-db";
 import Project from "@/models/project";
 import { jsonResponse } from "@/lib/api-response";
-const renameProjectSchema = z.object({
-  projectId: z.string().regex(/^[a-f\d]{24}$/i, "Project ID must be valid."),
-  projectName: z.string().trim().min(1, "Project name cannot be empty.").max(100, "Project names must be 100 characters or fewer."),
-}).strict();
+import { renameProjectSchema } from "@/lib/validation/project.schema";
+
 export async function PATCH(request: Request) {
   try {
     const { userId, isAuthenticated, sessionId } = await auth();

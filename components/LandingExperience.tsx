@@ -199,7 +199,7 @@ export default function LandingExperience() {
   return (
     <ReactLenis root options={lenisOptions}>
       <MotionConfig reducedMotion="user">
-        <main id="top" className="landing-experience relative overflow-x-clip bg-canvas text-ink selection:bg-acid selection:text-ink">
+        <main id="top" className="landing-experience relative overflow-x-clip bg-canvas text-ink">
           <NeoBrutalCursor />
           {!reduceMotion && <motion.div aria-hidden="true" className="fixed left-0 right-0 top-0 z-[70] h-1 origin-left bg-brand" style={{ scaleX: scrollYProgress }} />}
 

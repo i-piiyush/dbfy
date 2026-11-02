@@ -4,6 +4,12 @@ import Project from "@/models/project";
 import { jsonResponse } from "@/lib/api-response";
 import type { ProjectSummary } from "@/types/project";
 
+import dns from "node:dns";
+
+dns.setServers([
+  "1.1.1.1",
+  "1.0.0.1"
+]);
 
 
 export async function GET() {

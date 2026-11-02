@@ -149,6 +149,10 @@
   * {
     @apply border-border outline-ring/50;
     }
+  ::selection {
+    background-color: var(--palette-acid);
+    color: var(--palette-ink);
+  }
   body {
     @apply bg-background text-foreground;
     }
